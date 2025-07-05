@@ -1,0 +1,225 @@
+/* Variables CSS para temas */
+:root {
+  /* Tema Light */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-accent: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-accent: #495057;
+  --border-color: #dee2e6;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+}
+
+[data-theme="dark"] {
+  /* Tema Dark */
+  --bg-primary: #212529;
+  --bg-secondary: #343a40;
+  --bg-accent: #495057;
+  --text-primary: #ffffff;
+  --text-secondary: #adb5bd;
+  --text-accent: #dee2e6;
+  --border-color: #495057;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+}
+
+/* Clases personalizadas */
+.bg-theme-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-theme-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-theme-accent {
+  background-color: var(--bg-accent);
+}
+
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-accent {
+  color: var(--text-accent);
+}
+
+.border-theme {
+  border-color: var(--border-color);
+}
+
+.shadow-theme {
+  box-shadow: 0 0.125rem 0.25rem var(--shadow);
+}
+
+.shadow-theme-lg {
+  box-shadow: 0 0.5rem 1rem var(--shadow);
+}
+
+/* Transiciones suaves para el cambio de tema */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Estilos para el body */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Codec Pro', Arial, sans-serif !important;
+}
+
+/* Estilos para el logo */
+.navbar-brand img {
+  transition: opacity 0.3s ease;
+}
+
+.navbar-brand img:hover {
+  opacity: 0.8;
+}
+
+/* Botón de cambio de tema */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-accent);
+  transform: scale(1.1);
+}
+
+/* Estilos para cards */
+.card-theme {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.card-theme .card-header {
+  background-color: var(--bg-accent);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Estilos para navbar */
+.navbar-theme {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-theme .navbar-brand,
+.navbar-theme .nav-link {
+  color: var(--text-primary);
+}
+
+.navbar-theme .nav-link:hover {
+  color: var(--primary-color);
+}
+
+/* Estilos para botones personalizados */
+.btn-theme-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-theme-primary:hover {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  opacity: 0.9;
+}
+
+.btn-theme-secondary {
+  background-color: var(--bg-accent);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-theme-secondary:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+@font-face {
+  font-family: 'Codec Pro';
+  src: url('/fonts/codec-pro/CodecPro-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Codec Pro';
+  src: url('/fonts/codec-pro/CodecPro-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Codec Pro';
+  src: url('/fonts/codec-pro/CodecPro-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+body, h1, h2, h3, h4, h5, h6, button, input, textarea, select {
+  font-family: 'Codec Pro', Arial, sans-serif !important;
+}
+
+@media (min-width: 992px) {
+  .snacks-card-equal {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .snacks-card-equal {
+    min-height: unset;
+    margin-bottom: 1.5rem;
+  }
+  
+  .theme-toggle {
+    top: 20px;
+    right: 80px; /* Mover hacia la izquierda para evitar el botón hamburguesa */
+  }
+}
+
+@media (max-width: 576px) {
+  .theme-toggle {
+    top: 15px;
+    right: 70px; /* Aún más a la izquierda en móviles muy pequeños */
+    width: 45px;
+    height: 45px;
+  }
+} 

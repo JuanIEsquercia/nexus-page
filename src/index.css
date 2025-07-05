@@ -1,0 +1,55 @@
+/* Reset básico y fuentes */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Utilidades adicionales */
+.min-vh-75 {
+  min-height: 75vh;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enlaces del navbar */
+.navbar-nav .nav-link {
+  transition: color 0.3s ease;
+}
+
+/* Efectos hover para cards */
+.card-theme:hover {
+  transform: translateY(-5px);
+  transition: transform 0.3s ease;
+}
+
+/* Botones de redes sociales */
+footer a {
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+footer a:hover {
+  transform: scale(1.2);
+  color: var(--primary-color) !important;
+}
