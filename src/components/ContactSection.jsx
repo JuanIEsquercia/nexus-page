@@ -1,6 +1,15 @@
 import { BsWhatsapp, BsGeoAlt, BsInstagram, BsEnvelope, BsPhone } from 'react-icons/bs';
+import { openWhatsApp } from '../utils/contactUtils';
 
 const ContactSection = () => {
+  const handleEmailClick = () => {
+    window.location.href = 'mailto:nexuscorrientes@gmail.com?subject=Consulta sobre servicios de vending';
+  };
+
+  const handleInstagramClick = () => {
+    window.open('https://instagram.com/nexusvending', '_blank');
+  };
+
   return (
     <>
       {/* Sección de contacto */}
@@ -23,8 +32,8 @@ const ContactSection = () => {
                       <BsGeoAlt className="text-primary mb-3" size={48} />
                       <h5 className="text-theme-primary">Ubicación</h5>
                       <p className="text-theme-secondary">
-                        [Tu dirección o ciudad]<br />
-                        Servicio en toda la región
+                        José Ramón Vidal 1768<br />
+                        Corrientes, Argentina
                       </p>
                     </div>
                   </div>
@@ -36,8 +45,8 @@ const ContactSection = () => {
                       <BsPhone className="text-success mb-3" size={48} />
                       <h5 className="text-theme-primary">Contacto Directo</h5>
                       <p className="text-theme-secondary">
-                        WhatsApp: [Tu número]<br />
-                        Email: [Tu email]
+                        WhatsApp: +54 9 379 426-7780<br />
+                        Email: nexuscorrientes@gmail.com
                       </p>
                     </div>
                   </div>
@@ -55,10 +64,16 @@ const ContactSection = () => {
                       Sin compromiso, sin costos ocultos. Te visitamos y evaluamos las mejores opciones para tu empresa.
                     </p>
                     <div className="d-flex gap-3 justify-content-center flex-wrap">
-                      <button className="btn btn-success btn-lg">
+                      <button 
+                        className="btn btn-success btn-lg"
+                        onClick={() => openWhatsApp('Hola! Me interesa recibir una propuesta personalizada para mi empresa.')}
+                      >
                         <BsWhatsapp className="me-2" /> Consultar por WhatsApp
                       </button>
-                      <button className="btn btn-theme-secondary btn-lg">
+                      <button 
+                        className="btn btn-theme-secondary btn-lg"
+                        onClick={handleEmailClick}
+                      >
                         <BsEnvelope className="me-2" /> Enviar Email
                       </button>
                     </div>
@@ -89,13 +104,28 @@ const ContactSection = () => {
               <div className="d-flex justify-content-md-end align-items-center gap-4">
                 <span className="text-theme-secondary small">Síguenos:</span>
                 <div className="d-flex gap-3">
-                  <a href="#" className="text-theme-secondary" title="WhatsApp">
+                  <a 
+                    href="#" 
+                    className="text-theme-secondary" 
+                    title="WhatsApp"
+                    onClick={() => openWhatsApp('Hola!')}
+                  >
                     <BsWhatsapp size={24} />
                   </a>
-                  <a href="#" className="text-theme-secondary" title="Instagram">
+                  <a 
+                    href="#" 
+                    className="text-theme-secondary" 
+                    title="Instagram"
+                    onClick={handleInstagramClick}
+                  >
                     <BsInstagram size={24} />
                   </a>
-                  <a href="#" className="text-theme-secondary" title="Email">
+                  <a 
+                    href="#" 
+                    className="text-theme-secondary" 
+                    title="Email"
+                    onClick={handleEmailClick}
+                  >
                     <BsEnvelope size={24} />
                   </a>
                 </div>

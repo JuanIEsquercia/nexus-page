@@ -6,7 +6,7 @@ import AboutSection from './components/AboutSection'
 import ServicesSection from './components/ServicesSection'
 import VendingTypesSection from './components/VendingTypesSection'
 import ServiceModesSection from './components/ServiceModesSection'
-import WhyChooseUsSection from './components/WhyChooseUsSection'
+
 import ContactSection from './components/ContactSection'
 
 function App() {
@@ -20,7 +20,6 @@ function App() {
         <ServicesSection />
         <VendingTypesSection />
         <ServiceModesSection />
-        <WhyChooseUsSection />
         <ContactSection />
       </div>
     </ThemeProvider>

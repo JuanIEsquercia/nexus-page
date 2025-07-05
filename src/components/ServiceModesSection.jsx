@@ -1,19 +1,18 @@
-import { BsCoin, BsBuilding, BsPeople, BsCheck2Circle } from "react-icons/bs";
-import { openWhatsApp } from '../utils/contactUtils';
+import { BsCoin, BsBuilding, BsPeople } from "react-icons/bs";
 
 const ServiceModesSection = () => {
   const modes = [
     {
       icon: <BsCoin className="text-warning" size={32} />,
       title: "Consumo directo",
-      description: "Cada colaborador paga su consumo en la máquina",
+      description: "Cada colaborador paga su consumo en la máquina con pesos argentinos",
       bgColor: "bg-warning",
     },
     {
       icon: <BsBuilding className="text-primary" size={32} />,
       title: "Abono mensual por empresa",
       description:
-        "La empresa asigna un monto a cada colaborador (PIN personalizado)",
+        "La empresa asigna un monto en pesos argentinos a cada colaborador (PIN personalizado)",
       bgColor: "bg-primary",
     },
     {
@@ -23,13 +22,6 @@ const ServiceModesSection = () => {
         "Se instala en locales comerciales para venta directa a clientes externos",
       bgColor: "bg-success",
     },
-  ];
-
-  const benefits = [
-    "Instalación sin costo",
-    "Mantenimiento y reposición incluidos",
-    "Sistema de usuarios para control por colaborador",
-    "Servicio flexible según tus necesidades"
   ];
 
   return (
@@ -67,37 +59,6 @@ const ServiceModesSection = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Beneficios destacados */}
-        <div className="row mt-5">
-          <div className="col-lg-8 mx-auto">
-            <div className="card card-theme shadow-theme mb-5">
-              <div className="card-body p-4">
-                <h4 className="text-center text-theme-primary mb-4">
-                  Beneficios para tu empresa
-                </h4>
-                <div className="row g-3 mb-2">
-                  {benefits.map((benefit, index) => (
-                    <div key={index} className="col-md-6">
-                      <div className="d-flex align-items-center">
-                        <BsCheck2Circle className="text-success me-3" size={20} />
-                        <span className="text-theme-primary">{benefit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-center mt-4">
-                  <button 
-                    className="btn btn-primary btn-lg"
-                    onClick={() => openWhatsApp('Hola! Me interesa solicitar una propuesta para mi empresa.')}
-                  >
-                    Solicitar Propuesta
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Tabla adicional para detalles */}
