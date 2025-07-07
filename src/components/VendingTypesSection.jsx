@@ -170,7 +170,7 @@ const VendingTypesSection = () => {
                   <BsCoin className="text-warning mb-3 mx-auto" size={48} />
                   <h6 className="text-theme-primary mb-2">Abono mensual por colaborador</h6>
                   <p className="text-theme-secondary small">
-                    La empresa asigna un monto mensual en pesos argentinos a cada colaborador para consumo en la máquina.
+                    La empresa asigna un monto mensual a cada colaborador para consumo en la máquina.
                   </p>
                 </div>
                 <button 
