@@ -101,7 +101,7 @@ const ServiceModesSection = () => {
                           Individual
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Oficinas pequeñas
+                          Más de 1.000 colaboradores/visitantes diarios
                         </td>
                       </tr>
                       <tr className="border-theme">
