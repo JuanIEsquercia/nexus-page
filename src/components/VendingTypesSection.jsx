@@ -64,9 +64,9 @@ const VendingTypesSection = () => {
     <section id="expendedoras" className="py-5 bg-theme-primary">
       <div className="container">
         <div className="text-center mb-5">
-          <h2 className="display-5 fw-bold text-theme-primary">Tipo de Expendedoras</h2>
+          <h2 className="display-5 fw-bold text-theme-primary">Nuestras Máquinas de Café</h2>
           <p className="lead text-theme-secondary">
-            Soluciones para el bienestar de tu equipo: cafeteras automáticas y snacks/bebidas con abono mensual.
+            Soluciones para el bienestar de tu equipo con cafeteras automáticas de primer nivel.
           </p>
         </div>
 
@@ -74,7 +74,7 @@ const VendingTypesSection = () => {
         <div className="row g-4">
           {/* Card 1: Cafeteras Automáticas */}
           <div className="col-lg-6">
-            <div className="card card-theme shadow-theme" style={cardStyle}>
+            <div className="card card-glass animate-fade-in-up" style={cardStyle}>
               <div className="card-body p-4" style={cardBodyStyle}>
                 <h3 className="text-theme-primary mb-4">Cafeteras Automáticas</h3>
                 <p className="text-theme-secondary mb-4">
@@ -100,7 +100,7 @@ const VendingTypesSection = () => {
 
           {/* Card 2: ¿Cómo Funciona? */}
           <div className="col-lg-6">
-            <div className="card card-theme shadow-theme" style={cardStyle}>
+            <div className="card card-glass animate-fade-in-up" style={{ ...cardStyle, animationDelay: '0.1s' }}>
               <div className="card-body p-4" style={cardBodyStyle}>
                 <h4 className="text-theme-primary mb-4">¿Cómo Funciona?</h4>
                 <div className="d-flex flex-column gap-3" style={{ flex: '1' }}>
@@ -127,7 +127,7 @@ const VendingTypesSection = () => {
                     </div>
                     <div className="col-6">
                       <h5 className="text-success mb-1">📋</h5>
-                      <small className="text-theme-secondary">Consumo acordado</small>
+                      <small className="text-theme-secondary">Consumo mínimo</small>
                     </div>
                   </div>
                 </div>
@@ -135,54 +135,6 @@ const VendingTypesSection = () => {
             </div>
           </div>
 
-          {/* Card 3: Snacks y Bebidas Frías */}
-          <div className="col-lg-6">
-            <div className="card card-theme shadow-theme" style={cardStyle}>
-              <div className="card-body p-4" style={cardBodyStyle}>
-                <h3 className="text-theme-primary mb-4">Snacks y Bebidas Frías</h3>
-                <p className="text-theme-secondary mb-4">
-                  Servicio exclusivo por abono mensual para colaboradores. Amplia variedad de productos, reposición y mantenimiento incluidos.
-                </p>
-                <div className="row g-2" style={{ flex: '1' }}>
-                  {snacks.map((category, index) => (
-                    <div key={index} className="col-6">
-                      <div className="bg-theme-accent rounded p-2 text-center h-100 d-flex flex-column justify-content-center">
-                        <div className="mb-1" style={{ fontSize: '1.5rem' }}>
-                          {category.icon}
-                        </div>
-                        <small className="text-theme-primary fw-bold">
-                          {category.name}
-                        </small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Modalidad de Servicio */}
-          <div className="col-lg-6">
-            <div className="card card-theme shadow-theme" style={cardStyle}>
-              <div className="card-body p-4" style={{ ...cardBodyStyle, textAlign: 'center' }}>
-                <h4 className="text-theme-primary mb-4">Modalidad de Servicio</h4>
-                <div className="mb-4" style={{ flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <BsCoin className="text-warning mb-3 mx-auto" size={48} />
-                  <h6 className="text-theme-primary mb-2">Abono mensual por colaborador</h6>
-                  <p className="text-theme-secondary small">
-                    La empresa asigna un monto mensual a cada colaborador para consumo en la máquina.
-                  </p>
-                </div>
-                <button 
-                  className="btn btn-primary btn-lg w-100"
-                  onClick={() => openWhatsApp('Hola! Me interesa la propuesta de snacks y bebidas para colaboradores en mi empresa.')}
-                >
-                  <BsDroplet className="me-2" />
-                  Solicitar Propuesta
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

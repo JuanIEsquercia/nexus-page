@@ -16,7 +16,7 @@ const Navbar = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
+          <ul className="navbar-nav ms-auto align-items-center">
             <li className="nav-item">
               <a className="nav-link" href="#inicio">Inicio</a>
             </li>
@@ -27,13 +27,18 @@ const Navbar = () => {
               <a className="nav-link" href="#servicios">Servicios</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" href="#expendedoras">Tipo de Expendedoras</a>
+              <a className="nav-link" href="#expendedoras">Máquinas</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" href="#modalidades">Modalidades</a>
-            </li>
-            <li className="nav-item">
-              <a className="nav-link" href="#contacto">Contacto</a>
+              <button 
+                className="btn btn-primary ms-lg-3 mt-2 mt-lg-0 fw-bold"
+                onClick={() => {
+                  const contactSection = document.getElementById('contacto');
+                  if (contactSection) contactSection.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Pedir Presupuesto
+              </button>
             </li>
           </ul>
         </div>

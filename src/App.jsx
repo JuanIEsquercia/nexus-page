@@ -7,58 +7,26 @@ import AboutSection from './components/AboutSection'
 import ServicesSection from './components/ServicesSection'
 import VendingTypesSection from './components/VendingTypesSection'
 import ServiceModesSection from './components/ServiceModesSection'
+import FAQSection from './components/FAQSection'
+import ImageCarousel from './components/ImageCarousel'
 import ContactSection from './components/ContactSection'
-import CountrySelector from './components/CountrySelector'
-import MiamiPage from './pages/MiamiPage'
-
 function App() {
-  const [selectedCountry, setSelectedCountry] = useState(null);
-
-  useEffect(() => {
-    // Verificar si ya hay una selección guardada
-    const savedCountry = localStorage.getItem('selectedCountry');
-    if (savedCountry) {
-      setSelectedCountry(savedCountry);
-    }
-  }, []);
-
-  const handleCountrySelect = (country) => {
-    setSelectedCountry(country);
-  };
-
-  // Si no hay país seleccionado, mostrar el selector
-  if (!selectedCountry) {
-    return (
-      <ThemeProvider>
-        <CountrySelector onCountrySelect={handleCountrySelect} />
-      </ThemeProvider>
-    );
-  }
-
-  // Si el país seleccionado es Argentina, mostrar la página actual
-  if (selectedCountry === 'argentina') {
-    return (
-      <ThemeProvider>
-        <div className="min-vh-100">
-          <ThemeToggle />
-          <Navbar />
-          <HeroSection />
-          <AboutSection />
-          <ServicesSection />
-          <VendingTypesSection />
-          <ServiceModesSection />
-          <ContactSection />
-        </div>
-      </ThemeProvider>
-    );
-  }
-
-  // Si el país seleccionado es Miami, mostrar página en inglés
-  if (selectedCountry === 'miami') {
-    return <MiamiPage />;
-  }
-
-  return null;
+  return (
+    <ThemeProvider>
+      <div className="min-vh-100">
+        <ThemeToggle />
+        <Navbar />
+        <HeroSection />
+        <AboutSection />
+        <ImageCarousel />
+        <ServicesSection />
+        <VendingTypesSection />
+        <ServiceModesSection />
+        <FAQSection />
+        <ContactSection />
+      </div>
+    </ThemeProvider>
+  );
 }
 
 export default App

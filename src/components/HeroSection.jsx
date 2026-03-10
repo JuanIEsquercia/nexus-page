@@ -8,29 +8,23 @@ const HeroSection = () => {
         <div className="row align-items-center min-vh-75">
           <div className="col-lg-6">
             <h1 className="display-4 fw-bold text-theme-primary mb-4">
-              <span className="text-primary">Snacks, Bebidas y Café</span> al alcance de tu equipo
+              <span className="text-primary">El Mejor Café</span> para tu equipo
             </h1>
             <p className="lead text-theme-secondary mb-4">
-              Mejoramos el bienestar laboral con soluciones prácticas y sin inversión inicial.
+              Mejoramos el ambiente laboral con máquinas de café. Instalación y mantenimiento 100% a nuestro cargo.
             </p>
             <div className="d-flex gap-3 flex-wrap mb-4">
               <button 
-                className="btn btn-primary btn-lg mb-2"
-                onClick={() => openWhatsApp('Hola! Me interesa conocer más sobre sus servicios de máquinas expendedoras.')}
+                className="btn btn-primary btn-lg mb-2 fw-bold"
+                onClick={() => openWhatsApp('Hola! Me interesa pedir un presupuesto del servicio de máquinas de café para mi empresa.')}
               >
-                <BsWhatsapp className="me-2" /> Consultanos por WhatsApp
-              </button>
-              <button 
-                className="btn btn-theme-secondary btn-lg mb-2"
-                onClick={openLocation}
-              >
-                <BsGeoAlt className="me-2" /> Ver ubicación
+                <BsWhatsapp className="me-2" /> Pedir Presupuesto
               </button>
             </div>
           </div>
           <div className="col-lg-6">
             <div className="text-center">
-              <div className="bg-theme-secondary rounded shadow-theme-lg p-5">
+              <div className="glass-panel rounded-4 p-5">
                 <h3 className="text-theme-primary mb-3">☕ Soluciones Integrales</h3>
                 <p className="text-theme-secondary">
                   Instalación, mantenimiento y gestión 100% a nuestro cargo

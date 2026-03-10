@@ -3,25 +3,17 @@ import { BsCoin, BsBuilding, BsPeople } from "react-icons/bs";
 const ServiceModesSection = () => {
   const modes = [
     {
-      icon: <BsCoin className="text-warning" size={32} />,
-      title: "Consumo directo",
-      description: "Cada colaborador paga su consumo en la máquina con pesos argentinos",
-      bgColor: "bg-warning",
-    },
-    {
       icon: <BsBuilding className="text-primary" size={32} />,
-      title: "Abono mensual por empresa",
-      description:
-        "La empresa asigna un monto en pesos argentinos a cada colaborador (PIN personalizado)",
+      title: "Servicio Corporativo Local",
+      description: "Servicio gratuito para colaboradores. La empresa abona los consumos cumplimentando una cantidad mensual mínima requerida.",
       bgColor: "bg-primary",
     },
     {
       icon: <BsPeople className="text-success" size={32} />,
-      title: "Venta al público",
-      description:
-        "Se instala en locales comerciales para venta directa a clientes externos",
+      title: "Servicio a Distancia",
+      description: "Instalación remota con provisión mensual de insumos. Incluye capacitación detallada de manipulación y carga.",
       bgColor: "bg-success",
-    },
+    }
   ];
 
   return (
@@ -38,8 +30,8 @@ const ServiceModesSection = () => {
 
         <div className="row g-4">
           {modes.map((mode, index) => (
-            <div key={index} className="col-lg-4">
-              <div className="card card-theme h-100 shadow-theme">
+            <div key={index} className="col-lg-6">
+              <div className="card card-glass h-100 shadow-theme">
                 <div className="card-header card-theme text-center py-4">
                   <div className="mb-3">{mode.icon}</div>
                   <h5 className="text-theme-primary mb-0">{mode.title}</h5>
@@ -79,57 +71,43 @@ const ServiceModesSection = () => {
                           Modalidad
                         </th>
                         <th className="text-theme-primary border-theme px-4 py-3">
-                          ¿Quién paga?
+                          Implementación
                         </th>
                         <th className="text-theme-primary border-theme px-4 py-3">
-                          Control
+                          Control de Consumos
                         </th>
                         <th className="text-theme-primary border-theme px-4 py-3">
-                          Ideal para
+                          Requisitos
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-theme">
                         <td className="text-theme-primary px-4 py-3 fw-bold">
-                          Consumo directo
+                          Servicio Corporativo Local
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Colaborador
+                          Técnicos presenciales en tu empresa
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Individual
+                          Gestión exclusiva por sistema de usuarios
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Más de 1.000 colaboradores/visitantes diarios
+                          Cumplimentar cantidad de consumo mínimo mensual
                         </td>
                       </tr>
                       <tr className="border-theme">
                         <td className="text-theme-primary px-4 py-3 fw-bold">
-                          Abono mensual
+                          Servicio a Distancia
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Empresa
+                          Envío de máquina e insumos mensuales, con capacitación
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          PIN personalizado
+                          Gestión exclusiva por sistema de usuarios
                         </td>
                         <td className="text-theme-secondary px-4 py-3">
-                          Empresas medianas/grandes
-                        </td>
-                      </tr>
-                      <tr className="border-theme">
-                        <td className="text-theme-primary px-4 py-3 fw-bold">
-                          Venta al público
-                        </td>
-                        <td className="text-theme-secondary px-4 py-3">
-                          Cliente final
-                        </td>
-                        <td className="text-theme-secondary px-4 py-3">
-                          Libre acceso
-                        </td>
-                        <td className="text-theme-secondary px-4 py-3">
-                          Locales comerciales
+                          Cumplimentar cantidad de consumo mínimo mensual
                         </td>
                       </tr>
                     </tbody>

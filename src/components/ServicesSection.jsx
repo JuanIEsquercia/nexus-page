@@ -1,40 +1,40 @@
-import { BsCupHot, BsDroplet, BsShop } from 'react-icons/bs';
+import { BsCupHot, BsBoxSeam, BsWrench } from 'react-icons/bs';
 import { openWhatsApp } from '../utils/contactUtils';
 
 const ServicesSection = () => {
   const services = [
     {
-      title: "Cafeteras automáticas",
+      title: "Máquinas en Comodato",
       icon: <BsCupHot size={48} className="text-warning" />,
       features: [
-        "Instalación en oficinas o puntos de venta",
-        "Variedad de cafés, capuccino, leche y chocolate",
-        "Modalidad: consumo directo o abono por colaborador",
-        "Gestión y reposición 100% a cargo nuestro"
+        "Instalación sin inversión inicial",
+        "Equipos de última generación",
+        "Variedad de cafés y bebidas calientes",
+        "Gestión 100% a nuestro cargo"
       ],
-      message: "Hola! Me interesa más información sobre las cafeteras automáticas."
+      message: "Hola! Me interesa pedir un presupuesto por las máquinas de café en comodato."
     },
     {
-      title: "Máquinas de snacks y bebidas frías",
-      icon: <BsDroplet size={48} className="text-info" />,
+      title: "Provisión de Insumos",
+      icon: <BsBoxSeam size={48} className="text-info" />,
       features: [
-        "Amplia variedad de productos",
-        "Modalidad libre (colaborador paga) o empresa-financia",
-        "Alta rotación, ideal para oficinas",
-        "Entornos con alto flujo de personas"
+        "Café",
+        "Vasos, revolvedores y azúcar",
+        "Reposición periódica garantizada",
+        "Stock constante en tu oficina"
       ],
-      message: "Hola! Me interesa más información sobre las máquinas de snacks y bebidas frías."
+      message: "Hola! Me interesa conocer sobre la provisión de insumos de café."
     },
     {
-      title: "Cafeteras para locales comerciales",
-      icon: <BsShop size={48} className="text-success" />,
+      title: "Soporte Técnico Especializado",
+      icon: <BsWrench size={48} className="text-success" />,
       features: [
-        "Solución simple y profesional para vender café al paso",
-        "Ingreso extra y fidelización de clientes",
-        "Mínima gestión, máxima eficiencia",
-        "Ideal para comercios y locales"
+        "Mantenimiento preventivo regular",
+        "Resolución rápida de incidencias",
+        "Limpieza y sanitización de equipos",
+        "Equipos de reemplazo si es necesario"
       ],
-      message: "Hola! Me interesa más información sobre las cafeteras para locales comerciales."
+      message: "Hola! Me interesa saber más sobre el mantenimiento y soporte técnico."
     }
   ];
 
@@ -44,14 +44,14 @@ const ServicesSection = () => {
         <div className="text-center mb-5">
           <h2 className="display-5 fw-bold text-theme-primary">Nuestros Servicios</h2>
           <p className="lead text-theme-secondary">
-            Soluciones completas para mejorar el bienestar en tu empresa
+            Soluciones completas de café para potenciar a tu equipo
           </p>
         </div>
         
         <div className="row g-4">
           {services.map((service, index) => (
             <div key={index} className="col-lg-4">
-              <div className="card card-theme h-100 shadow-theme">
+              <div className="card card-glass h-100">
                 <div className="card-body text-center p-4">
                   <div className="mb-4">
                     {service.icon}
