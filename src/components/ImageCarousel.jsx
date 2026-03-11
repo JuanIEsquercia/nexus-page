@@ -1,14 +1,19 @@
-// Usamos import.meta.glob de Vite para importar de forma dinámica cualquier imagen (jpg, jpeg, png, webp) 
-// que esté en la carpeta src/assets/carousel. Esto evita la necesidad de configurar formatos manualmente.
-const imagesContext = import.meta.glob('../assets/carousel/*.{png,jpg,jpeg,webp,gif}', { eager: true });
-const dynamicImages = Object.values(imagesContext).map((module, index) => ({
-  id: index + 1,
-  url: module.default || module,
-}));
+// Usamos import.meta.glob de Vite para importar de forma dinámica cualquier imagen o video 
+// que esté en la carpeta src/assets/carousel.
+const mediaContext = import.meta.glob('../assets/carousel/*.{png,jpg,jpeg,webp,gif,mp4,webm}', { eager: true });
+const dynamicMedia = Object.values(mediaContext).map((module, index) => {
+  const url = module.default || module;
+  const isVideo = url.match(/\.(mp4|webm)$/i);
+  return {
+    id: index + 1,
+    url: url,
+    isVideo: isVideo,
+  };
+});
 
-// Si aún no hay imágenes cargadas en src/assets/carousel, mostramos un placeholder por defecto
-const imagesToRender = dynamicImages.length > 0 ? dynamicImages : [
-  { id: 1, url: 'https://placehold.co/1200x500/0f172a/0ea5e9?text=Cargar+imágenes+en+src/assets/carousel' }
+// Si aún no hay medios cargados en src/assets/carousel, mostramos un placeholder por defecto
+const mediaToRender = dynamicMedia.length > 0 ? dynamicMedia : [
+  { id: 1, url: 'https://placehold.co/1200x500/0f172a/0ea5e9?text=Cargar+imágenes+o+videos+en+src/assets/carousel', isVideo: false }
 ];
 
 const ImageCarousel = () => {
@@ -27,9 +32,9 @@ const ImageCarousel = () => {
             <div className="glass-panel rounded-4 overflow-hidden shadow-theme-lg animate-fade-in-up">
               <div id="nexusCarousel" className="carousel slide carousel-fade" data-bs-ride="carousel">
                 <div className="carousel-inner">
-                  {imagesToRender.map((image, index) => (
+                  {mediaToRender.map((media, index) => (
                     <div 
-                      key={image.id} 
+                      key={media.id} 
                       className={`carousel-item ${index === 0 ? 'active' : ''}`}
                       style={{ height: '500px' }}
                     >
@@ -41,25 +46,43 @@ const ImageCarousel = () => {
                           left: 0,
                           width: '100%',
                           height: '100%',
-                          backgroundImage: `url(${image.url})`,
+                          backgroundImage: media.isVideo ? 'none' : `url(${media.url})`,
+                          backgroundColor: media.isVideo ? '#000' : 'transparent', // Fondo negro puro para video si no cubre todo
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          filter: 'blur(20px) brightness(0.6)',
-                          transform: 'scale(1.1)',
+                          filter: media.isVideo ? 'none' : 'blur(20px) brightness(0.6)',
+                          transform: media.isVideo ? 'none' : 'scale(1.1)',
                           zIndex: 0
                         }}
                       />
-                      <img 
-                        src={image.url} 
-                        className="d-block w-100 h-100" 
-                        alt="Imagen de Vending Nexus"
-                        style={{
-                          objectFit: 'contain',
-                          position: 'relative',
-                          zIndex: 1,
-                          padding: '1rem' // Espacio de respiro
-                        }}
-                      />
+                      {media.isVideo ? (
+                        <video 
+                          src={media.url}
+                          className="d-block w-100 h-100"
+                          autoPlay 
+                          loop 
+                          muted 
+                          playsInline
+                          style={{
+                            objectFit: 'contain',
+                            position: 'relative',
+                            zIndex: 1,
+                            padding: '1rem' // Espacio de respiro
+                          }}
+                        />
+                      ) : (
+                        <img 
+                          src={media.url} 
+                          className="d-block w-100 h-100" 
+                          alt="Solución Vending Nexus"
+                          style={{
+                            objectFit: 'contain',
+                            position: 'relative',
+                            zIndex: 1,
+                            padding: '1rem' // Espacio de respiro
+                          }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
