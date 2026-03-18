@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import NexusLogo from '../NexusLogo'
+
 import QuickVisitModal from './QuickVisitModal'
 import {
   BsSpeedometer2,
@@ -151,8 +151,13 @@ export default function AdminLayout() {
             height: 56,
           }}
         >
-          <div style={{ maxWidth: 100 }}>
-            <NexusLogo />
+          <div>
+            <p className="mb-0 fw-bold" style={{ fontSize: '1.1rem', letterSpacing: '0.12em', background: 'var(--primary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              NEXUS
+            </p>
+            <p className="mb-0" style={{ color: 'var(--text-secondary)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '-2px' }}>
+              Operaciones
+            </p>
           </div>
           <button
             onClick={handleLogout}
