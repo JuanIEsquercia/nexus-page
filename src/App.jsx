@@ -31,6 +31,7 @@ import BalancePage from './pages/admin/BalancePage'
 import MaquinaFormPage from './pages/admin/MaquinaFormPage'
 import MaquinaDetallePage from './pages/admin/MaquinaDetallePage'
 import VisitaFormPage from './pages/admin/VisitaFormPage'
+import VisitaEditPage from './pages/admin/VisitaEditPage'
 import DocumentosPage from './pages/admin/DocumentosPage'
 import PresupuestoFormPage from './pages/admin/PresupuestoFormPage'
 import RemitoFormPage from './pages/admin/RemitoFormPage'
@@ -80,6 +81,7 @@ function App() {
               <Route path="maquinas/:maquinaId" element={<MaquinaDetallePage />} />
               <Route path="maquinas/:maquinaId/editar" element={<MaquinaFormPage />} />
               <Route path="visitas/nueva/:maquinaId" element={<VisitaFormPage />} />
+              <Route path="visitas/:visitaId/editar" element={<VisitaEditPage />} />
               <Route path="stock" element={<StockPage />} />
               <Route path="balance" element={<BalancePage />} />
               <Route path="documentos" element={<DocumentosPage />} />
