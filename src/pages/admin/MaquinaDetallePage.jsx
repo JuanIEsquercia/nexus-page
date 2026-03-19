@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
 import { formatFecha } from '../../lib/negocio'
-import { BsChevronLeft, BsPencil, BsTrash, BsPlus, BsClipboardCheck } from 'react-icons/bs'
+import { BsChevronLeft, BsPencil, BsTrash, BsPlus, BsClipboardCheck, BsCheck2 } from 'react-icons/bs'
 
 const inputStyle = {
   background: 'var(--bg-primary)',
