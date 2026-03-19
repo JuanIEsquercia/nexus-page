@@ -27,27 +27,27 @@ export const carouselImages = [
 export const faqs = [
   {
     id: "faq1",
-    question: "¿Cuánto demora el servicio técnico en caso de falla?",
-    answer: "Contamos con un SLA (Acuerdo de Nivel de Servicio) estricto. Nuestro equipo de soporte técnico responde en menos de 4 horas hábiles ante cualquier incidencia para garantizar que tu equipo nunca se quede sin café."
+    question: "¿Qué pasa si la máquina tiene una falla?",
+    answer: "La atendemos de inmediato. En Corrientes capital nuestro tiempo promedio de respuesta es de 3 horas. Sabemos lo que significa quedarse sin café en el medio de una jornada laboral, así que no te dejamos esperando."
   },
   {
     id: "faq2",
-    question: "¿La instalación inicial tiene algún costo?",
-    answer: "No, la instalación completa de las máquinas es 100% gratuita bajo el modelo de Servicio Corporativo Local. Nuestro equipo se encarga de la logística, puesta en marcha y calibración sin costo."
+    question: "¿La instalación tiene algún costo?",
+    answer: "Ninguno. Las máquinas se entregan en comodato — vos no pagás el equipo ni la instalación. El negocio funciona con las consumiciones, así de simple. Sin letra chica."
   },
   {
     id: "faq3",
-    question: "¿Cómo funciona el servicio a distancia?",
-    answer: "Enviamos la máquina de café junto con los insumos mensuales necesarios. Proporcionamos una capacitación virtual detallada a los encargados locales para la manipulación, limpieza básica y carga de insumos."
+    question: "¿Cómo funciona si estamos fuera de Corrientes?",
+    answer: "Nos encargamos de instalar el equipo personalmente y capacitar a tu equipo en el lugar, que es muy sencillo de usar. Después te acompañamos de forma remota por videollamada ante cualquier consulta que surja."
   },
   {
     id: "faq4",
-    question: "¿Qué compromiso de tiempo o permanencia exigen?",
-    answer: "Nuestros contratos de comodato estándar tienen una vigencia mínima de 6 meses. Esto nos permite asegurar la rentabilidad del servicio gratuito de mantenimiento y reposición de piezas."
+    question: "¿Hay algún contrato de permanencia?",
+    answer: "Acordamos una estadía mínima de 6 meses para el servicio de café. No hay multas ni cláusulas complicadas — simplemente es el tiempo necesario para que el servicio funcione bien para los dos."
   },
   {
     id: "faq5",
-    question: "¿Exigen un consumo mínimo mensual?",
-    answer: "Sí, dependiendo del volumen de tu empresa y el modelo de máquina instalada, establecemos un consumo mínimo o una cuota fija que absorbe la empresa, garantizando que todo el servicio sea óptimo."
+    question: "¿Existe un consumo mínimo mensual?",
+    answer: "Sí, hay un consumo mínimo que acordamos con cada empresa según la cantidad de máquinas y el volumen estimado. Lo definimos juntos antes de arrancar para que todo sea claro desde el principio."
   }
 ];
