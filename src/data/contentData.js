@@ -38,7 +38,7 @@ export const faqs = [
   {
     id: "faq3",
     question: "¿Cómo funciona si estamos fuera de Corrientes?",
-    answer: "Nos encargamos de instalar el equipo personalmente y capacitar a tu equipo en el lugar, que es muy sencillo de usar. Después te acompañamos de forma remota por videollamada ante cualquier consulta que surja."
+    answer: "Nos encargamos de instalar el equipo personalmente y capacitar a tu gente en el lugar, que es muy sencillo de usar. Después te acompañamos de forma remota por videollamada ante cualquier consulta que surja."
   },
   {
     id: "faq4",
