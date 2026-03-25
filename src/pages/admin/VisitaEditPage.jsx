@@ -42,6 +42,7 @@ export default function VisitaEditPage() {
   const [bebidas, setBebidas]           = useState([])
   const [catalogoInsumos, setCatalogoInsumos] = useState([])
   const [visitaAnterior, setVisitaAnterior]   = useState(null)
+  const [esUltimaVisita, setEsUltimaVisita]   = useState(false)
 
   // Datos originales (para restaurar stock al guardar)
   const [insumosOriginales, setInsumosOriginales] = useState([])
@@ -118,6 +119,7 @@ export default function VisitaEditPage() {
       const todasVisitas = visitasSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
       const idx = todasVisitas.findIndex((v) => v.id === visitaId)
       setVisitaAnterior(todasVisitas[idx + 1] ?? null) // la siguiente en orden desc = la anterior cronológicamente
+      setEsUltimaVisita(idx === 0) // primera en desc = la más reciente
 
       setLoading(false)
     })
@@ -218,8 +220,7 @@ export default function VisitaEditPage() {
       })
 
       // 5 — Si es la visita más reciente, actualizar máquina
-      // (verificamos comparando con contadorActual de la máquina)
-      if (maquina?.contadorActual === parseInt(contadorTotal, 10)) {
+      if (esUltimaVisita) {
         batch.update(doc(db, 'clientes', clienteId, 'maquinas', maquinaId), {
           contadorActual: contadorNum,
           ultimaVisita:   Timestamp.fromDate(fechaDate),
