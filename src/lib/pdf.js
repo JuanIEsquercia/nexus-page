@@ -20,8 +20,13 @@ const CW     = W - M * 2  // content width = 170
 const pesos = (v) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(v ?? 0)
 
-const fmtFecha = (str) => {
-  const d = new Date(str + 'T12:00:00')
+const fmtFecha = (val) => {
+  if (!val) return '—'
+  let d
+  if (val?.toDate) d = val.toDate()
+  else if (val instanceof Date) d = val
+  else d = new Date(String(val) + 'T12:00:00')
+  if (isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
@@ -273,6 +278,32 @@ export function generarRemitoPDF({
 
   y = doc.lastAutoTable.finalY + 8
 
+  // ── Expendios (bebidas del período) ──────────────────
+  if (expendios.length > 0) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...C.dark)
+    doc.text('Consumos del período', M, y)
+    y += 3
+
+    autoTable(doc, {
+      startY: y,
+      head: [['BEBIDA / PRODUCTO', 'CANTIDAD EN PERÍODO']],
+      body: expendios.map((e) => [e.bebidaNombre, String(e.cantidadPeriodo ?? '—')]),
+      headStyles:         { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
+      bodyStyles:         { fontSize: 9, textColor: C.dark },
+      alternateRowStyles: { fillColor: C.bgLight },
+      columnStyles: {
+        0: { cellWidth: 130 },
+        1: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
+      },
+      margin: { left: M, right: M },
+      theme: 'grid',
+    })
+
+    y = doc.lastAutoTable.finalY + 8
+  }
+
   // ── Observaciones ────────────────────────────────────
   if (observaciones) {
     doc.setFont('helvetica', 'bold')
@@ -292,7 +323,7 @@ export function generarRemitoPDF({
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...C.gray)
-  doc.text('Este remito certifica la entrega de los productos detallados anteriormente.', W / 2, y, { align: 'center' })
+  doc.text('Documento generado automáticamente por el sistema Nexus Vending Management.', W / 2, y, { align: 'center' })
   y += 4
   doc.text('Documento generado automáticamente por el sistema Nexus Vending Management.', W / 2, y, { align: 'center' })
 
@@ -336,6 +367,7 @@ export function generarRendicionPDF({
   clienteNombre, clienteCuit, clienteContacto,
   maquinaNombre, maquinaModelo, maquinaSerie,
   fecha, contadorTotal, contadorAnterior, serviciosPeriodo, observaciones,
+  expendios = [],
 }) {
   const doc = new jsPDF()
   let y = 16

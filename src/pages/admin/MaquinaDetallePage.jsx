@@ -226,19 +226,28 @@ export default function MaquinaDetallePage() {
             const esUltima = idx === 0
             const visitaAnterior = visitas[idx + 1] ?? null
 
-            const handleDescargarRendicion = () => {
+            const handleDescargarRendicion = async () => {
+              const expSnap = await getDocs(
+                collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas', v.id, 'expendios')
+              )
+              const expendios = expSnap.docs
+                .map((d) => d.data())
+                .filter((e) => e.cantidadPeriodo != null && e.cantidadPeriodo > 0)
+                .sort((a, b) => a.bebidaNombre.localeCompare(b.bebidaNombre))
+
               generarRendicionPDF({
-                clienteNombre:   cliente?.razonSocial      ?? '',
-                clienteCuit:     cliente?.cuit             ?? '',
-                clienteContacto: cliente?.contactoNombre   ?? '',
-                maquinaNombre:   maquina.nombre            ?? '',
-                maquinaModelo:   maquina.modelo            ?? '',
-                maquinaSerie:    maquina.serie             ?? '',
-                fecha:           v.fecha,
-                contadorTotal:   v.contadorTotal,
+                clienteNombre:    cliente?.razonSocial      ?? '',
+                clienteCuit:      cliente?.cuit             ?? '',
+                clienteContacto:  cliente?.contactoNombre   ?? '',
+                maquinaNombre:    maquina.nombre            ?? '',
+                maquinaModelo:    maquina.modelo            ?? '',
+                maquinaSerie:     maquina.serie             ?? '',
+                fecha:            v.fecha,
+                contadorTotal:    v.contadorTotal,
                 contadorAnterior: visitaAnterior?.contadorTotal ?? null,
                 serviciosPeriodo: v.serviciosPeriodo,
-                observaciones:   v.observaciones,
+                observaciones:    v.observaciones,
+                expendios,
               })
             }
 
