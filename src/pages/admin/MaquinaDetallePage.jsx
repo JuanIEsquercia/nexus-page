@@ -6,7 +6,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
 import { formatFecha } from '../../lib/negocio'
-import { BsChevronLeft, BsPencil, BsTrash, BsPlus, BsClipboardCheck, BsCheck2 } from 'react-icons/bs'
+import { BsChevronLeft, BsPencil, BsTrash, BsPlus, BsClipboardCheck, BsCheck2, BsFileEarmarkArrowDown } from 'react-icons/bs'
+import { generarRendicionPDF } from '../../lib/pdf'
 
 const inputStyle = {
   background: 'var(--bg-primary)',
@@ -223,6 +224,23 @@ export default function MaquinaDetallePage() {
             const estado = accion[v.id]
             const estaGuardando = saving === v.id
             const esUltima = idx === 0
+            const visitaAnterior = visitas[idx + 1] ?? null
+
+            const handleDescargarRendicion = () => {
+              generarRendicionPDF({
+                clienteNombre:   cliente?.razonSocial      ?? '',
+                clienteCuit:     cliente?.cuit             ?? '',
+                clienteContacto: cliente?.contactoNombre   ?? '',
+                maquinaNombre:   maquina.nombre            ?? '',
+                maquinaModelo:   maquina.modelo            ?? '',
+                maquinaSerie:    maquina.serie             ?? '',
+                fecha:           v.fecha,
+                contadorTotal:   v.contadorTotal,
+                contadorAnterior: visitaAnterior?.contadorTotal ?? null,
+                serviciosPeriodo: v.serviciosPeriodo,
+                observaciones:   v.observaciones,
+              })
+            }
 
             return (
               <div
@@ -286,6 +304,14 @@ export default function MaquinaDetallePage() {
                           </p>
                         </div>
                         <div className="d-flex gap-1">
+                          <button
+                            className="btn btn-sm"
+                            onClick={handleDescargarRendicion}
+                            style={{ color: 'var(--success-color)', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem' }}
+                            title="Descargar rendición PDF"
+                          >
+                            <BsFileEarmarkArrowDown size={12} />
+                          </button>
                           <Link
                             to={`/admin/visitas/${v.id}/editar?cliente=${clienteId}&maquina=${maquinaId}`}
                             className="btn btn-sm"

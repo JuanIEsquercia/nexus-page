@@ -330,3 +330,127 @@ export function generarRemitoPDF({
   doc.save(`Remito - ${numero}.pdf`)
   return numero
 }
+
+// ── Generador Rendición de Visita ─────────────────────
+export function generarRendicionPDF({
+  clienteNombre, clienteCuit, clienteContacto,
+  maquinaNombre, maquinaModelo, maquinaSerie,
+  fecha, contadorTotal, contadorAnterior, serviciosPeriodo, observaciones,
+}) {
+  const doc = new jsPDF()
+  let y = 16
+
+  // ── Header ──────────────────────────────────────────
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.setTextColor(...C.primary)
+  doc.text('RENDICIÓN DE VISITA', W / 2, y, { align: 'center' })
+  y += 9
+
+  doc.setFontSize(11)
+  doc.setTextColor(...C.dark)
+  doc.text('NEXUS VENDING', W / 2, y, { align: 'center' })
+  y += 5
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...C.gray)
+  doc.text(`Fecha de visita: ${fmtFecha(fecha)}`, W / 2, y, { align: 'center' })
+  y += 3
+
+  doc.setDrawColor(...C.primary)
+  doc.setLineWidth(0.8)
+  doc.line(M, y + 2, W - M, y + 2)
+  y += 10
+
+  // ── Info: Cliente / Máquina ──────────────────────────
+  y = infoBox(doc, y, [
+    { label: 'Cliente', bold: true },
+    { label: 'Empresa:',  value: clienteNombre  || '' },
+    { label: 'CUIT:',     value: clienteCuit    || '' },
+    { label: 'Contacto:', value: clienteContacto || '' },
+  ], [
+    { label: 'Máquina', bold: true },
+    { label: 'Nombre:',  value: maquinaNombre  || '' },
+    { label: 'Modelo:',  value: maquinaModelo  || '' },
+    { label: 'S/N:',     value: maquinaSerie   || '' },
+  ], 44)
+
+  // ── Bloque servicios ─────────────────────────────────
+  const blockH = 32
+  doc.setFillColor(...C.primary)
+  doc.roundedRect(M, y, CW, blockH, 3, 3, 'F')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...C.white)
+  doc.text('Servicios en el período', W / 2, y + 10, { align: 'center' })
+
+  doc.setFontSize(28)
+  doc.text(
+    serviciosPeriodo != null ? String(serviciosPeriodo) : '—',
+    W / 2, y + 25, { align: 'center' }
+  )
+  y += blockH + 8
+
+  // ── Contadores ───────────────────────────────────────
+  y = infoBox(doc, y, [
+    { label: 'Contadores', bold: true },
+    { label: 'Contador anterior:', value: contadorAnterior != null ? contadorAnterior.toLocaleString('es-AR') : '—' },
+    { label: 'Contador actual:',   value: contadorTotal    != null ? contadorTotal.toLocaleString('es-AR')    : '—' },
+  ], [
+    { label: 'Resumen', bold: true },
+    { label: 'Fecha:',      value: fmtFecha(fecha) },
+    { label: 'Diferencia:', value: serviciosPeriodo != null ? `+${serviciosPeriodo} servicios` : '—' },
+  ], 40)
+
+  // ── Observaciones ────────────────────────────────────
+  if (observaciones) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...C.warning)
+    doc.text('Observaciones:', M, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...C.warning)
+    const lines = doc.splitTextToSize(observaciones, CW)
+    doc.text(lines, M, y)
+    y += lines.length * 5 + 5
+  }
+
+  // ── Firmas ──────────────────────────────────────────
+  const sigY = Math.max(y + 20, 240)
+  const sigW = 55
+
+  doc.setDrawColor(...C.gray)
+  doc.setLineWidth(0.3)
+  doc.line(M + 5, sigY, M + 5 + sigW, sigY)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...C.gray)
+  doc.text('Técnico / Responsable', M + 5 + sigW / 2, sigY - 2, { align: 'center' })
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...C.dark)
+  doc.text('NEXUS VENDING', M + 5 + sigW / 2, sigY + 5, { align: 'center' })
+
+  const rxSig = W - M - 5 - sigW
+  doc.setDrawColor(...C.gray)
+  doc.setLineWidth(0.3)
+  doc.line(rxSig, sigY, rxSig + sigW, sigY)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...C.gray)
+  doc.text('Representante del cliente', rxSig + sigW / 2, sigY - 2, { align: 'center' })
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...C.dark)
+  doc.text(clienteNombre || '', rxSig + sigW / 2, sigY + 5, { align: 'center' })
+
+  // ── Footer ──────────────────────────────────────────
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...C.gray)
+  doc.text('Documento generado automáticamente por el sistema Nexus Vending Management.', W / 2, 285, { align: 'center' })
+
+  const nombre = `Rendicion - ${clienteNombre} - ${fmtFecha(fecha)}.pdf`
+  doc.save(nombre)
+}
