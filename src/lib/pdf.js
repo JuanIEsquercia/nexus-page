@@ -365,7 +365,7 @@ export function generarRemitoPDF({
 // ── Generador Rendición de Visita ─────────────────────
 export function generarRendicionPDF({
   clienteNombre, clienteCuit, clienteContacto,
-  maquinaNombre, maquinaModelo, maquinaSerie,
+  maquinaNombre,
   fecha, contadorTotal, contadorAnterior, serviciosPeriodo, observaciones,
   expendios = [],
 }) {
@@ -398,14 +398,12 @@ export function generarRendicionPDF({
   // ── Info: Cliente / Máquina ──────────────────────────
   y = infoBox(doc, y, [
     { label: 'Cliente', bold: true },
-    { label: 'Empresa:',  value: clienteNombre  || '' },
-    { label: 'CUIT:',     value: clienteCuit    || '' },
+    { label: 'Empresa:',  value: clienteNombre   || '' },
+    { label: 'CUIT:',     value: clienteCuit     || '' },
     { label: 'Contacto:', value: clienteContacto || '' },
   ], [
-    { label: 'Máquina', bold: true },
-    { label: 'Nombre:',  value: maquinaNombre  || '' },
-    { label: 'Modelo:',  value: maquinaModelo  || '' },
-    { label: 'S/N:',     value: maquinaSerie   || '' },
+    { label: 'Servicio', bold: true },
+    { label: 'Ubicación:', value: maquinaNombre || '' },
   ], 44)
 
   // ── Bloque servicios ─────────────────────────────────

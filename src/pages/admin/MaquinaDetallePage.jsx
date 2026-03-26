@@ -235,17 +235,20 @@ export default function MaquinaDetallePage() {
                 .filter((e) => e.cantidadPeriodo != null && e.cantidadPeriodo > 0)
                 .sort((a, b) => a.bebidaNombre.localeCompare(b.bebidaNombre))
 
+              const contadorAnterior = visitaAnterior?.contadorTotal ?? null
+              const serviciosPeriodo = contadorAnterior != null
+                ? Math.max(0, v.contadorTotal - contadorAnterior)
+                : null
+
               generarRendicionPDF({
-                clienteNombre:    cliente?.razonSocial      ?? '',
-                clienteCuit:      cliente?.cuit             ?? '',
-                clienteContacto:  cliente?.contactoNombre   ?? '',
-                maquinaNombre:    maquina.nombre            ?? '',
-                maquinaModelo:    maquina.modelo            ?? '',
-                maquinaSerie:     maquina.serie             ?? '',
+                clienteNombre:    cliente?.razonSocial    ?? '',
+                clienteCuit:      cliente?.cuit           ?? '',
+                clienteContacto:  cliente?.contactoNombre ?? '',
+                maquinaNombre:    maquina.nombre          ?? '',
                 fecha:            v.fecha,
                 contadorTotal:    v.contadorTotal,
-                contadorAnterior: visitaAnterior?.contadorTotal ?? null,
-                serviciosPeriodo: v.serviciosPeriodo,
+                contadorAnterior,
+                serviciosPeriodo,
                 observaciones:    v.observaciones,
                 expendios,
               })
