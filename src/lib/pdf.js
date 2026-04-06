@@ -278,32 +278,6 @@ export function generarRemitoPDF({
 
   y = doc.lastAutoTable.finalY + 8
 
-  // ── Expendios (bebidas del período) ──────────────────
-  if (expendios.length > 0) {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(...C.dark)
-    doc.text('Consumos del período', M, y)
-    y += 3
-
-    autoTable(doc, {
-      startY: y,
-      head: [['BEBIDA / PRODUCTO', 'CANTIDAD EN PERÍODO']],
-      body: expendios.map((e) => [e.bebidaNombre, String(e.cantidadPeriodo ?? '—')]),
-      headStyles:         { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
-      bodyStyles:         { fontSize: 9, textColor: C.dark },
-      alternateRowStyles: { fillColor: C.bgLight },
-      columnStyles: {
-        0: { cellWidth: 130 },
-        1: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
-      },
-      margin: { left: M, right: M },
-      theme: 'grid',
-    })
-
-    y = doc.lastAutoTable.finalY + 8
-  }
-
   // ── Observaciones ────────────────────────────────────
   if (observaciones) {
     doc.setFont('helvetica', 'bold')
@@ -433,6 +407,32 @@ export function generarRendicionPDF({
     { label: 'Fecha:',      value: fmtFecha(fecha) },
     { label: 'Diferencia:', value: serviciosPeriodo != null ? `+${serviciosPeriodo} servicios` : '—' },
   ], 40)
+
+  // ── Expendios (bebidas del período) ──────────────────
+  if (expendios.length > 0) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...C.dark)
+    doc.text('Consumos del período', M, y)
+    y += 3
+
+    autoTable(doc, {
+      startY: y,
+      head: [['BEBIDA / PRODUCTO', 'CANTIDAD EN PERÍODO']],
+      body: expendios.map((e) => [e.bebidaNombre, String(e.cantidadPeriodo ?? '—')]),
+      headStyles:         { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
+      bodyStyles:         { fontSize: 9, textColor: C.dark },
+      alternateRowStyles: { fillColor: C.bgLight },
+      columnStyles: {
+        0: { cellWidth: 130 },
+        1: { cellWidth: 40, halign: 'center', fontStyle: 'bold' },
+      },
+      margin: { left: M, right: M },
+      theme: 'grid',
+    })
+
+    y = doc.lastAutoTable.finalY + 8
+  }
 
   // ── Observaciones ────────────────────────────────────
   if (observaciones) {
