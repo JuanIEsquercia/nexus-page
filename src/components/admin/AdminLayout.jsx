@@ -11,15 +11,17 @@ import {
   BsBoxArrowRight,
   BsClipboardPlusFill,
   BsFileEarmarkText,
+  BsBarChartFill,
 } from 'react-icons/bs'
 
 // Los primeros 4 aparecen también en el bottom nav mobile
 const NAV_ITEMS = [
-  { to: '/admin',            label: 'Dashboard',   icon: BsSpeedometer2,    exact: true },
-  { to: '/admin/clientes',   label: 'Clientes',    icon: BsPeopleFill },
-  { to: '/admin/stock',      label: 'Stock',       icon: BsBoxSeam },
-  { to: '/admin/balance',    label: 'Balance',     icon: BsGraphUp },
-  { to: '/admin/documentos', label: 'Documentos',  icon: BsFileEarmarkText },
+  { to: '/admin',              label: 'Dashboard',   icon: BsSpeedometer2,    exact: true },
+  { to: '/admin/clientes',     label: 'Clientes',    icon: BsPeopleFill },
+  { to: '/admin/stock',        label: 'Stock',       icon: BsBoxSeam },
+  { to: '/admin/balance',      label: 'Balance',     icon: BsGraphUp },
+  { to: '/admin/analytics',    label: 'Analytics',   icon: BsBarChartFill },
+  { to: '/admin/documentos',   label: 'Documentos',  icon: BsFileEarmarkText },
 ]
 
 export default function AdminLayout() {

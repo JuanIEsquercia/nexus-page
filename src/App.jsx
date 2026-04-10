@@ -35,6 +35,7 @@ import VisitaEditPage from './pages/admin/VisitaEditPage'
 import DocumentosPage from './pages/admin/DocumentosPage'
 import PresupuestoFormPage from './pages/admin/PresupuestoFormPage'
 import RemitoFormPage from './pages/admin/RemitoFormPage'
+import AnalyticsPage from './pages/admin/AnalyticsPage'
 
 function LandingPage() {
   return (
@@ -84,6 +85,7 @@ function App() {
               <Route path="visitas/:visitaId/editar" element={<VisitaEditPage />} />
               <Route path="stock" element={<StockPage />} />
               <Route path="balance" element={<BalancePage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="documentos" element={<DocumentosPage />} />
               <Route path="documentos/presupuesto/nuevo" element={<PresupuestoFormPage />} />
               <Route path="documentos/remito/nuevo" element={<RemitoFormPage />} />
