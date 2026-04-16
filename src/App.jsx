@@ -36,6 +36,7 @@ import DocumentosPage from './pages/admin/DocumentosPage'
 import PresupuestoFormPage from './pages/admin/PresupuestoFormPage'
 import RemitoFormPage from './pages/admin/RemitoFormPage'
 import AnalyticsPage from './pages/admin/AnalyticsPage'
+import IncidenciasPage from './pages/admin/IncidenciasPage'
 
 function LandingPage() {
   return (
@@ -86,6 +87,7 @@ function App() {
               <Route path="stock" element={<StockPage />} />
               <Route path="balance" element={<BalancePage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="incidencias" element={<IncidenciasPage />} />
               <Route path="documentos" element={<DocumentosPage />} />
               <Route path="documentos/presupuesto/nuevo" element={<PresupuestoFormPage />} />
               <Route path="documentos/remito/nuevo" element={<RemitoFormPage />} />
