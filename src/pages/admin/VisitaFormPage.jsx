@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   doc, getDoc, collection, getDocs, orderBy, query,
@@ -80,6 +80,25 @@ export default function VisitaFormPage() {
     })
   }, [maquinaId, clienteId])
 
+  // ── Suma en vivo de expendios de la visita ───────────
+  const totalExpendios = useMemo(() => {
+    let total = 0
+    let hayAlguno = false
+    bebidas.forEach((b) => {
+      const val = parseInt(expendios[b.id], 10)
+      if (isNaN(val)) return
+      hayAlguno = true
+      total += val
+    })
+    return hayAlguno ? total : null
+  }, [expendios, bebidas])
+
+  // ── Auto-completar contadorTotal desde la suma de expendios ──
+  useEffect(() => {
+    if (totalExpendios == null) return
+    setContadorTotal(String(totalExpendios))
+  }, [totalExpendios])
+
   // ── Insumos helpers ──────────────────────────────────
   const addInsumo = () => setInsumos((prev) => [...prev, { insumoId: '', cantidad: '' }])
   const removeInsumo = (i) => setInsumos((prev) => prev.filter((_, idx) => idx !== i))
@@ -110,18 +129,6 @@ export default function VisitaFormPage() {
       const fechaDate = new Date(fecha + 'T12:00:00')
       const serviciosPeriodo = calcularServiciosPeriodo(contadorNum, ultimaVisita?.contadorTotal ?? null)
 
-      // Obtener expendios de la última visita para calcular diferencias por bebida
-      let lastExpendios = {}
-      if (ultimaVisita) {
-        const expSnap = await getDocs(
-          collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas', ultimaVisita.id, 'expendios')
-        )
-        expSnap.docs.forEach((d) => {
-          const data = d.data()
-          lastExpendios[data.bebidaId] = data.contadorAcumulado
-        })
-      }
-
       const batch = writeBatch(db)
 
       // 1 — Crear doc de visita
@@ -140,21 +147,15 @@ export default function VisitaFormPage() {
       bebidas.forEach((bebida) => {
         const valorStr = expendios[bebida.id]
         if (valorStr === '' || valorStr == null) return
-        const contadorAcumulado = parseInt(valorStr, 10)
-        if (isNaN(contadorAcumulado)) return
-        const cantidadPeriodo = lastExpendios[bebida.id] != null
-          ? Math.max(0, contadorAcumulado - lastExpendios[bebida.id])
-          : null
+        const cantidad = parseInt(valorStr, 10)
+        if (isNaN(cantidad) || cantidad <= 0) return
         const expRef = doc(collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas', visitaRef.id, 'expendios'))
         batch.set(expRef, {
-          bebidaId:          bebida.id,
-          bebidaNombre:      bebida.nombre,
-          contadorAcumulado,
-          cantidadPeriodo,
+          bebidaId:    bebida.id,
+          bebidaNombre: bebida.nombre,
+          cantidad,
         })
-        if (cantidadPeriodo != null && cantidadPeriodo > 0) {
-          expendiosResumen.push({ nombre: bebida.nombre, cantidad: cantidadPeriodo })
-        }
+        expendiosResumen.push({ nombre: bebida.nombre, cantidad })
       })
 
       // 3 — Crear subdocs de insumos cargados + descontar stock global
@@ -294,16 +295,16 @@ export default function VisitaFormPage() {
             </div>
             <div className="col-12 col-sm-6">
               <label className="form-label small mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Contador total actual *
+                Contador total actual
               </label>
               <input
                 type="number"
                 className="form-control"
-                style={inputStyle}
+                style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
                 min={0}
                 value={contadorTotal}
-                onChange={(e) => setContadorTotal(e.target.value)}
-                placeholder={ultimaVisita ? `> ${ultimaVisita.contadorTotal}` : '0'}
+                readOnly
+                placeholder="Se calcula automáticamente"
               />
               {errors.contadorTotal && <p className="mt-1 mb-0 small" style={{ color: 'var(--danger-color)' }}>{errors.contadorTotal}</p>}
             </div>
@@ -331,28 +332,38 @@ export default function VisitaFormPage() {
             </p>
           ) : (
             <div className="d-flex flex-column gap-2">
-              {bebidas.map((bebida) => {
-                const lastVal = ultimaVisita ? null : null // se calcula en submit
-                return (
-                  <div key={bebida.id} className="d-flex align-items-center gap-2">
-                    <label
-                      className="small mb-0 flex-grow-1"
-                      style={{ color: 'var(--text-primary)', minWidth: 0 }}
-                    >
-                      {bebida.nombre}
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      style={{ ...inputStyle, width: 110, textAlign: 'right' }}
-                      min={0}
-                      value={expendios[bebida.id] ?? ''}
-                      onChange={(e) => setExpendios((prev) => ({ ...prev, [bebida.id]: e.target.value }))}
-                      placeholder="—"
-                    />
-                  </div>
-                )
-              })}
+              {bebidas.map((bebida) => (
+                <div key={bebida.id} className="d-flex align-items-center gap-2">
+                  <label
+                    className="small mb-0 flex-grow-1"
+                    style={{ color: 'var(--text-primary)', minWidth: 0 }}
+                  >
+                    {bebida.nombre}
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    style={{ ...inputStyle, width: 110, textAlign: 'right' }}
+                    min={0}
+                    value={expendios[bebida.id] ?? ''}
+                    onChange={(e) => setExpendios((prev) => ({ ...prev, [bebida.id]: e.target.value }))}
+                    placeholder="—"
+                  />
+                </div>
+              ))}
+              {totalExpendios != null && (
+                <div
+                  className="d-flex align-items-center justify-content-between pt-2 mt-1"
+                  style={{ borderTop: '1px solid var(--border-color)' }}
+                >
+                  <span className="small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
+                    Total servicios
+                  </span>
+                  <span className="fw-bold" style={{ color: 'var(--primary-color)', fontSize: '1rem' }}>
+                    {totalExpendios}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </SECTION>
