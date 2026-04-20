@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, addDoc, collection, getDocs, orderBy, query, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
 import { maquinaSchema } from '../../lib/schemas'
 import { BsChevronLeft } from 'react-icons/bs'
@@ -21,7 +21,7 @@ const CAMPO = ({ label, hint, error, children }) => (
   </div>
 )
 
-const EMPTY = { nombre: '', modelo: '', serie: '', notas: '' }
+const EMPTY = { nombre: '', modeloId: '', serie: '', notas: '' }
 
 export default function MaquinaFormPage() {
   // Ruta nueva:  /admin/clientes/:clienteId/maquinas/nueva
@@ -33,19 +33,15 @@ export default function MaquinaFormPage() {
   const [form, setForm] = useState(EMPTY)
   const [clienteNombre, setClienteNombre] = useState('')
   const [resolvedClienteId, setResolvedClienteId] = useState(clienteId ?? null)
+  const [modelos, setModelos] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
 
   useEffect(() => {
+    const modelosFetch = getDocs(query(collection(db, 'modelos'), orderBy('nombre')))
+
     if (esEdicion) {
-      // Buscar la máquina en todas las subcolecciones no es directo en Firestore.
-      // Guardamos clienteId dentro del doc de la máquina para facilitar esto.
-      // Acá lo leemos del collectionGroup o del doc directamente buscando por el campo.
-      // Usamos un enfoque simple: el maquinaId lleva el clienteId codificado NO,
-      // en cambio guardamos clienteId en el documento de la máquina al crear.
-      // Por eso podemos hacer una búsqueda directa si tenemos el clienteId.
-      // Como en edición llegamos desde el detalle de la máquina, pasamos clienteId como query param.
       const params = new URLSearchParams(window.location.search)
       const cId = params.get('cliente') ?? clienteId
       if (cId) {
@@ -53,26 +49,31 @@ export default function MaquinaFormPage() {
         Promise.all([
           getDoc(doc(db, 'clientes', cId, 'maquinas', maquinaId)),
           getDoc(doc(db, 'clientes', cId)),
-        ]).then(([maqSnap, cliSnap]) => {
+          modelosFetch,
+        ]).then(([maqSnap, cliSnap, modelosSnap]) => {
           if (maqSnap.exists()) {
             const d = maqSnap.data()
             setForm({
-              nombre: d.nombre ?? '',
-              modelo: d.modelo ?? '',
-              serie:  d.serie  ?? '',
-              notas:  d.notas  ?? '',
+              nombre:   d.nombre   ?? '',
+              modeloId: d.modeloId ?? '',
+              serie:    d.serie    ?? '',
+              notas:    d.notas    ?? '',
             })
           }
           if (cliSnap.exists()) setClienteNombre(cliSnap.data().razonSocial ?? '')
+          setModelos(modelosSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
           setLoadingData(false)
         })
       } else {
         setLoadingData(false)
       }
     } else {
-      // Nueva máquina — cargar nombre del cliente
-      getDoc(doc(db, 'clientes', clienteId)).then((snap) => {
-        if (snap.exists()) setClienteNombre(snap.data().razonSocial ?? '')
+      Promise.all([
+        getDoc(doc(db, 'clientes', clienteId)),
+        modelosFetch,
+      ]).then(([cliSnap, modelosSnap]) => {
+        if (cliSnap.exists()) setClienteNombre(cliSnap.data().razonSocial ?? '')
+        setModelos(modelosSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
         setLoadingData(false)
       })
     }
@@ -140,8 +141,18 @@ export default function MaquinaFormPage() {
 
           <div className="row g-2">
             <div className="col-12 col-sm-6">
-              <CAMPO label="Modelo" error={errors.modelo}>
-                <input className="form-control" style={inputStyle} value={form.modelo} onChange={set('modelo')} placeholder="Ej: Necta Colibri" />
+              <CAMPO label="Modelo" error={errors.modeloId}>
+                <select
+                  className="form-control"
+                  style={{ ...inputStyle, appearance: 'auto' }}
+                  value={form.modeloId}
+                  onChange={set('modeloId')}
+                >
+                  <option value="">Sin modelo</option>
+                  {modelos.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
               </CAMPO>
             </div>
             <div className="col-12 col-sm-6">

@@ -66,10 +66,23 @@ export default function VisitaFormPage() {
         collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas'),
         orderBy('fecha', 'desc'), limit(1)
       )),
-    ]).then(([maqSnap, cliSnap, bebidasSnap, insumosSnap, visitasSnap]) => {
-      if (maqSnap.exists()) setMaquina({ id: maqSnap.id, ...maqSnap.data() })
+    ]).then(async ([maqSnap, cliSnap, bebidasSnap, insumosSnap, visitasSnap]) => {
+      const maqData = maqSnap.exists() ? { id: maqSnap.id, ...maqSnap.data() } : null
+      if (maqData) setMaquina(maqData)
       if (cliSnap.exists()) setCliente({ id: cliSnap.id, ...cliSnap.data() })
-      const bebidasData = bebidasSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((b) => b.activa)
+
+      const todasBebidas = bebidasSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((b) => b.activa)
+      let bebidasData = todasBebidas
+
+      if (maqData?.modeloId) {
+        const modeloSnap = await getDoc(doc(db, 'modelos', maqData.modeloId))
+        if (modeloSnap.exists()) {
+          const ids = modeloSnap.data().bebidas ?? []
+          const filtradas = ids.map((id) => todasBebidas.find((b) => b.id === id)).filter(Boolean)
+          if (filtradas.length > 0) bebidasData = filtradas
+        }
+      }
+
       setBebidas(bebidasData)
       const init = {}
       bebidasData.forEach((b) => { init[b.id] = '' })

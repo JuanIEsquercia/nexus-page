@@ -26,6 +26,7 @@ export default function MaquinaDetallePage() {
   const [visitas, setVisitas]           = useState([])
   const [loading, setLoading]           = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [modeloNombre, setModeloNombre] = useState(null)
 
   // Estado de acción por visita: { [visitaId]: 'confirm-delete' | null }
   const [accion, setAccion] = useState({})
@@ -48,6 +49,13 @@ export default function MaquinaDetallePage() {
       setLoading(false)
     })
   }, [maquinaId, clienteId])
+
+  useEffect(() => {
+    if (!maquina?.modeloId) return
+    getDoc(doc(db, 'modelos', maquina.modeloId)).then((snap) => {
+      if (snap.exists()) setModeloNombre(snap.data().nombre)
+    })
+  }, [maquina?.modeloId])
 
   const handleDeleteMaquina = async () => {
     await deleteDoc(doc(db, 'clientes', clienteId, 'maquinas', maquinaId))
@@ -133,8 +141,8 @@ export default function MaquinaDetallePage() {
         <div>
           <h5 className="mb-1" style={{ color: 'var(--text-primary)' }}>{maquina.nombre}</h5>
           <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>
-            {maquina.modelo && <span>{maquina.modelo}</span>}
-            {maquina.modelo && maquina.serie && <span> · </span>}
+            {(modeloNombre ?? maquina.modelo) && <span>{modeloNombre ?? maquina.modelo}</span>}
+            {(modeloNombre ?? maquina.modelo) && maquina.serie && <span> · </span>}
             {maquina.serie && <span>S/N: {maquina.serie}</span>}
           </p>
         </div>

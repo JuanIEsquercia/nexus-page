@@ -13,6 +13,7 @@ import {
   BsFileEarmarkText,
   BsBarChartFill,
   BsExclamationTriangleFill,
+  BsCpu,
 } from 'react-icons/bs'
 
 // Los primeros 4 aparecen también en el bottom nav mobile
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { to: '/admin/analytics',    label: 'Analytics',   icon: BsBarChartFill },
   { to: '/admin/documentos',   label: 'Documentos',  icon: BsFileEarmarkText },
   { to: '/admin/incidencias',  label: 'Incidencias', icon: BsExclamationTriangleFill },
+  { to: '/admin/modelos',      label: 'Modelos',     icon: BsCpu },
 ]
 
 export default function AdminLayout() {

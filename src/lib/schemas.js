@@ -20,10 +20,14 @@ export const visitaSchema = z.object({
 })
 
 export const maquinaSchema = z.object({
-  nombre:  z.string().min(2, 'Requerido'),
-  modelo:  z.string().optional(),
-  serie:   z.string().optional(),
-  notas:   z.string().optional(),
+  nombre:   z.string().min(2, 'Requerido'),
+  modeloId: z.string().optional(),
+  serie:    z.string().optional(),
+  notas:    z.string().optional(),
+})
+
+export const modeloSchema = z.object({
+  nombre: z.string().min(2, 'Requerido'),
 })
 
 export const presupuestoSchema = z.object({
