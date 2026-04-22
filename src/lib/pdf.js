@@ -419,7 +419,7 @@ export function generarRendicionPDF({
     autoTable(doc, {
       startY: y,
       head: [['BEBIDA / PRODUCTO', 'CANTIDAD EN PERÍODO']],
-      body: expendios.map((e) => [e.bebidaNombre, String(e.cantidadPeriodo ?? '—')]),
+      body: expendios.map((e) => [e.bebidaNombre, String(e.cantidadPeriodo ?? e.cantidad ?? '—')]),
       headStyles:         { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
       bodyStyles:         { fontSize: 9, textColor: C.dark },
       alternateRowStyles: { fillColor: C.bgLight },

@@ -72,7 +72,7 @@ export default function VisitaEditPage() {
         collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas'),
         orderBy('fecha', 'desc'), limit(20)
       )),
-    ]).then(([visitaSnap, insumosSnap, expendiosSnap, maqSnap, bebidasSnap, insumosCtlgSnap, visitasSnap]) => {
+    ]).then(async ([visitaSnap, insumosSnap, expendiosSnap, maqSnap, bebidasSnap, insumosCtlgSnap, visitasSnap]) => {
       if (!visitaSnap.exists()) { setLoading(false); return }
 
       const visita = { id: visitaSnap.id, ...visitaSnap.data() }
@@ -98,14 +98,26 @@ export default function VisitaEditPage() {
       const expOrig = expendiosSnap.docs.map((d) => ({ docId: d.id, ...d.data() }))
       setExpendiosOriginales(expOrig)
       const expMap = {}
-      expOrig.forEach((e) => { expMap[e.bebidaId] = String(e.contadorAcumulado ?? '') })
+      expOrig.forEach((e) => { expMap[e.bebidaId] = String(e.contadorAcumulado ?? e.cantidad ?? '') })
       setExpendios(expMap)
 
       // Máquina
-      if (maqSnap.exists()) setMaquina({ id: maqSnap.id, ...maqSnap.data() })
+      const maqData = maqSnap.exists() ? { id: maqSnap.id, ...maqSnap.data() } : null
+      if (maqData) setMaquina(maqData)
 
-      // Bebidas
-      const bebidasData = bebidasSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((b) => b.activa)
+      // Bebidas - filtradas por modelo si la máquina tiene uno
+      const todasBebidas = bebidasSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((b) => b.activa)
+      let bebidasData = todasBebidas
+
+      if (maqData?.modeloId) {
+        const modeloSnap = await getDoc(doc(db, 'modelos', maqData.modeloId))
+        if (modeloSnap.exists()) {
+          const ids = modeloSnap.data().bebidas ?? []
+          const filtradas = ids.map((id) => todasBebidas.find((b) => b.id === id)).filter(Boolean)
+          if (filtradas.length > 0) bebidasData = filtradas
+        }
+      }
+
       setBebidas(bebidasData)
       // Completar expendios con bebidas que no tenían valor
       bebidasData.forEach((b) => {
@@ -185,7 +197,7 @@ export default function VisitaEditPage() {
         )
         expSnap.docs.forEach((d) => {
           const data = d.data()
-          lastExpendios[data.bebidaId] = data.contadorAcumulado
+          lastExpendios[data.bebidaId] = data.contadorAcumulado ?? data.cantidad
         })
       }
 

@@ -164,9 +164,10 @@ export default function VisitaFormPage() {
         if (isNaN(cantidad) || cantidad <= 0) return
         const expRef = doc(collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas', visitaRef.id, 'expendios'))
         batch.set(expRef, {
-          bebidaId:    bebida.id,
-          bebidaNombre: bebida.nombre,
+          bebidaId:       bebida.id,
+          bebidaNombre:   bebida.nombre,
           cantidad,
+          cantidadPeriodo: cantidad,
         })
         expendiosResumen.push({ nombre: bebida.nombre, cantidad })
       })

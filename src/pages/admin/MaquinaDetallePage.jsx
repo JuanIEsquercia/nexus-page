@@ -240,7 +240,7 @@ export default function MaquinaDetallePage() {
               )
               const expendios = expSnap.docs
                 .map((d) => d.data())
-                .filter((e) => e.cantidadPeriodo != null && e.cantidadPeriodo > 0)
+                .filter((e) => (e.cantidadPeriodo ?? e.cantidad ?? 0) > 0)
                 .sort((a, b) => a.bebidaNombre.localeCompare(b.bebidaNombre))
 
               const contadorAnterior = visitaAnterior?.contadorTotal ?? null
