@@ -40,9 +40,40 @@ import IncidenciasPage from './pages/admin/IncidenciasPage'
 import ModeloListPage from './pages/admin/ModeloListPage'
 import ModeloFormPage from './pages/admin/ModeloFormPage'
 
+import { Helmet } from 'react-helmet-async'
+
 function LandingPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Nexus Vending",
+    "image": "https://tudominio.com.ar/assets/nexus-logo.png",
+    "description": "Servicio premium de máquinas de café y vending para empresas en Argentina.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Buenos Aires",
+      "addressCountry": "AR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -34.6037,
+      "longitude": -58.3816
+    },
+    "url": "https://tudominio.com.ar",
+    "telephone": "+5491100000000",
+    "priceRange": "$$"
+  };
+
   return (
     <div className="min-vh-100">
+      <Helmet>
+        <title>Máquinas de Café y Vending en Argentina | Nexus</title>
+        <meta name="description" content="Servicio premium de máquinas de café y vending para empresas en Argentina. Instalación en comodato, insumos y soporte técnico." />
+        <link rel="canonical" href="https://tudominio.com.ar" />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       <ThemeToggle />
       <Navbar />
       <HeroSection />

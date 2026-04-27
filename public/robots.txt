@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Descomentar y reemplazar con el dominio final en producción
+# Sitemap: https://tudominio.com.ar/sitemap.xml

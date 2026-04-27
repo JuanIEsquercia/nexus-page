@@ -30,6 +30,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-flagkit": "^2.0.4",
+    "react-helmet-async": "^3.0.0",
     "react-icons": "^5.4.0",
     "react-router-dom": "^7.13.1",
     "zod": "^4.3.6"

@@ -17,8 +17,8 @@ const ServiceModesSection = () => {
         <div className="bento-grid animate-blur-reveal" style={{ animationDelay: '0.1s' }}>
           
           {/* Modalidad 1: Local */}
-          <div className="bento-item bento-col-6 card-glass p-5 border-primary border-opacity-25 position-relative overflow-hidden">
-            <div className="position-absolute top-0 end-0 p-4 opacity-10">
+          <div className="bento-item bento-col-6 card-glass p-4 p-md-5 border-primary border-opacity-25 position-relative overflow-hidden">
+            <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block">
                <BsBuilding size={120} className="text-primary" />
             </div>
             <div className="position-relative z-1">
@@ -43,8 +43,8 @@ const ServiceModesSection = () => {
           </div>
 
           {/* Modalidad 2: A Distancia */}
-          <div className="bento-item bento-col-6 card-glass p-5 border-success border-opacity-25 position-relative overflow-hidden">
-            <div className="position-absolute top-0 end-0 p-4 opacity-10">
+          <div className="bento-item bento-col-6 card-glass p-4 p-md-5 border-success border-opacity-25 position-relative overflow-hidden">
+            <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block">
                <BsPeople size={120} className="text-success" />
             </div>
             <div className="position-relative z-1">

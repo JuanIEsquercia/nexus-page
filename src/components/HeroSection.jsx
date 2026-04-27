@@ -22,8 +22,8 @@ const HeroSection = () => {
               <span className="small fw-semibold text-theme-primary">Servicio Premium 2026</span>
             </div>
             <h1 className="display-3 fw-bold text-theme-primary mb-4" style={{ lineHeight: '1.1' }}>
-              El <span className="text-gradient">Mejor Café</span> <br />
-              para tu equipo
+              Máquinas de <span className="text-gradient">Café y Vending</span> <br />
+              en Argentina
             </h1>
             <p className="lead text-theme-secondary mb-5" style={{ fontSize: '1.25rem', maxWidth: '90%' }}>
               Revolucionamos el ambiente laboral con máquinas de café de última generación. Instalación, mantenimiento y gestión <strong className="text-theme-primary">100% a nuestro cargo</strong>.
