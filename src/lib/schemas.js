@@ -53,7 +53,7 @@ export const movimientoSchema = z.object({
   descripcion: z.string().min(1, 'Requerido'),
   categoria:   z.string().min(1, 'Requerido'),
   monto:       z.coerce.number().positive('Debe ser mayor a 0'),
-  fecha:       z.string().min(1, 'Requerido'),
+  vencimiento: z.string().min(1, 'Requerido'),
   notas:       z.string().optional(),
 })
 

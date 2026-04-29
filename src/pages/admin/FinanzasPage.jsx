@@ -20,7 +20,7 @@ const CATEGORIAS = {
   egreso:  ['Insumos', 'Alquiler', 'Mantenimiento', 'Sueldo', 'Servicios', 'Impuestos', 'Otro egreso'],
 }
 
-const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', fecha: '', notas: '' }
+const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', vencimiento: '', notas: '' }
 
 // ── Utilidades ────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ function MovimientoRow({ mov, onConfirm, onDelete }) {
         <div className="d-flex align-items-center gap-2 flex-wrap">
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{mov.categoria}</span>
           <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{formatFecha(mov.fecha)}</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{formatFecha(mov.vencimiento)}</span>
           {esPendiente && (
             <>
               <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
@@ -240,7 +240,7 @@ function MovimientoModal({ saving, errors, onClose, onSave }) {
             {errors.descripcion && <p style={errStyle}>{errors.descripcion}</p>}
           </div>
 
-          {/* Monto + Fecha */}
+          {/* Monto + Vencimiento */}
           <div className="d-flex gap-2 mb-3">
             <div style={{ flex: 1 }}>
               <label style={labelStyle}>Monto ($)</label>
@@ -253,13 +253,13 @@ function MovimientoModal({ saving, errors, onClose, onSave }) {
               {errors.monto && <p style={errStyle}>{errors.monto}</p>}
             </div>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Fecha</label>
+              <label style={labelStyle}>Vencimiento</label>
               <input
-                type="date" value={form.fecha}
-                onChange={e => set('fecha', e.target.value)}
-                style={{ ...inputStyle, borderColor: errors.fecha ? 'var(--danger-color)' : 'var(--border-color)' }}
+                type="date" value={form.vencimiento}
+                onChange={e => set('vencimiento', e.target.value)}
+                style={{ ...inputStyle, borderColor: errors.vencimiento ? 'var(--danger-color)' : 'var(--border-color)' }}
               />
-              {errors.fecha && <p style={errStyle}>{errors.fecha}</p>}
+              {errors.vencimiento && <p style={errStyle}>{errors.vencimiento}</p>}
             </div>
           </div>
 
@@ -557,7 +557,7 @@ export default function FinanzasPage() {
               [...filtrados]
                 .sort((a, b) => {
                   if (a.estado !== b.estado) return a.estado === 'pendiente' ? -1 : 1
-                  return (b.fecha ?? '').localeCompare(a.fecha ?? '')
+                  return (b.vencimiento ?? '').localeCompare(a.vencimiento ?? '')
                 })
                 .map(mov => (
                   <MovimientoRow
