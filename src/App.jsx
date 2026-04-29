@@ -39,6 +39,7 @@ import AnalyticsPage from './pages/admin/AnalyticsPage'
 import IncidenciasPage from './pages/admin/IncidenciasPage'
 import ModeloListPage from './pages/admin/ModeloListPage'
 import ModeloFormPage from './pages/admin/ModeloFormPage'
+import FinanzasPage from './pages/admin/FinanzasPage'
 
 import { Helmet } from 'react-helmet-async'
 
@@ -127,6 +128,7 @@ function App() {
               <Route path="documentos" element={<DocumentosPage />} />
               <Route path="documentos/presupuesto/nuevo" element={<PresupuestoFormPage />} />
               <Route path="documentos/remito/nuevo" element={<RemitoFormPage />} />
+              <Route path="finanzas" element={<FinanzasPage />} />
             </Route>
           </Routes>
         </AuthProvider>

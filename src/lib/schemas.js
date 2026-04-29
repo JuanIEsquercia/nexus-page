@@ -47,6 +47,16 @@ export const remitoSchema = z.object({
   observaciones: z.string().optional(),
 })
 
+export const movimientoSchema = z.object({
+  tipo:        z.enum(['ingreso', 'egreso']),
+  estado:      z.enum(['confirmado', 'pendiente']),
+  descripcion: z.string().min(1, 'Requerido'),
+  categoria:   z.string().min(1, 'Requerido'),
+  monto:       z.coerce.number().positive('Debe ser mayor a 0'),
+  fecha:       z.string().min(1, 'Requerido'),
+  notas:       z.string().optional(),
+})
+
 export const clienteSchema = z.object({
   razonSocial:      z.string().min(2, 'Requerido'),
   cuit:             z.string().min(1, 'Requerido'),
