@@ -8,7 +8,7 @@ import { movimientoSchema } from '../../lib/schemas'
 import {
   BsPlus, BsTrash, BsCheckCircleFill,
   BsClockFill, BsArrowUpCircleFill, BsArrowDownCircleFill,
-  BsXLg, BsChevronLeft, BsChevronRight,
+  BsXLg, BsChevronLeft, BsChevronRight, BsExclamationTriangleFill,
 } from 'react-icons/bs'
 
 // ── Constantes ────────────────────────────────────────────
@@ -28,6 +28,11 @@ function periodoKey(mes, anio) {
   return `${anio}-${String(mes + 1).padStart(2, '0')}`
 }
 
+// Deriva el período directamente del campo vencimiento (YYYY-MM-DD → YYYY-MM)
+function periodoDeVencimiento(vencimiento) {
+  return vencimiento.slice(0, 7)
+}
+
 function formatMonto(n) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
 }
@@ -40,6 +45,11 @@ function formatFecha(str) {
 
 function hoy() {
   return new Date().toISOString().split('T')[0]
+}
+
+function labelMes(periodo) {
+  const [y, m] = periodo.split('-')
+  return `${MESES[parseInt(m) - 1]} ${y}`
 }
 
 // ── Sub-componentes ───────────────────────────────────────
@@ -62,11 +72,12 @@ function SummaryCard({ label, monto, color, icon: Icon, sub }) {
   )
 }
 
-function MovimientoRow({ mov, onConfirm, onDelete }) {
-  const esIngreso  = mov.tipo === 'ingreso'
+function MovimientoRow({ mov, onConfirm, onDelete, extraLabel }) {
+  const esIngreso   = mov.tipo === 'ingreso'
   const esPendiente = mov.estado === 'pendiente'
-  const color      = esIngreso ? 'var(--success-color)' : 'var(--danger-color)'
-  const signo      = esIngreso ? '+' : '−'
+  const esVencido   = esPendiente && mov.vencimiento && mov.vencimiento < hoy()
+  const color       = esIngreso ? 'var(--success-color)' : 'var(--danger-color)'
+  const signo       = esIngreso ? '+' : '−'
 
   return (
     <div
@@ -88,12 +99,23 @@ function MovimientoRow({ mov, onConfirm, onDelete }) {
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{mov.categoria}</span>
           <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{formatFecha(mov.vencimiento)}</span>
+          {extraLabel && (
+            <>
+              <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.68rem' }}>{extraLabel}</span>
+            </>
+          )}
           {esPendiente && (
             <>
               <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
-              <span className="d-flex align-items-center gap-1" style={{ color: '#f59e0b', fontSize: '0.68rem', fontWeight: 600 }}>
-                <BsClockFill size={9} /> Pendiente
-              </span>
+              {esVencido
+                ? <span className="d-flex align-items-center gap-1" style={{ color: 'var(--danger-color)', fontSize: '0.68rem', fontWeight: 600 }}>
+                    <BsExclamationTriangleFill size={9} /> Vencido
+                  </span>
+                : <span className="d-flex align-items-center gap-1" style={{ color: '#f59e0b', fontSize: '0.68rem', fontWeight: 600 }}>
+                    <BsClockFill size={9} /> Pendiente
+                  </span>
+              }
             </>
           )}
         </div>
@@ -137,10 +159,62 @@ function MovimientoRow({ mov, onConfirm, onDelete }) {
   )
 }
 
+// ── Panel compromisos pendientes de otros períodos ────────
+
+function VencimientosPanel({ items, periodoActual, onConfirm, onDelete }) {
+  if (items.length === 0) return null
+
+  const vencidos = items.filter(m => m.vencimiento && m.vencimiento < hoy())
+  const futuros  = items.filter(m => !m.vencimiento || m.vencimiento >= hoy())
+
+  return (
+    <div className="mb-4">
+      <div className="d-flex align-items-center gap-2 mb-2">
+        <BsClockFill size={13} style={{ color: '#f59e0b' }} />
+        <span className="fw-semibold" style={{ color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+          Compromisos pendientes
+        </span>
+        {vencidos.length > 0 && (
+          <span
+            style={{
+              background: 'rgba(239,68,68,0.15)', color: 'var(--danger-color)',
+              borderRadius: '2rem', padding: '0.1rem 0.5rem', fontSize: '0.68rem', fontWeight: 600,
+            }}
+          >
+            {vencidos.length} vencido{vencidos.length > 1 ? 's' : ''}
+          </span>
+        )}
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginLeft: 'auto' }}>
+          Fuera del período actual
+        </span>
+      </div>
+
+      <div
+        className="rounded-3"
+        style={{
+          background: 'var(--bg-secondary)',
+          border: vencidos.length > 0 ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(245,158,11,0.25)',
+          overflow: 'hidden',
+        }}
+      >
+        {[...vencidos, ...futuros].map(mov => (
+          <MovimientoRow
+            key={mov.id}
+            mov={mov}
+            onConfirm={onConfirm}
+            onDelete={onDelete}
+            extraLabel={labelMes(mov.periodo)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Modal formulario ──────────────────────────────────────
 
 function MovimientoModal({ saving, errors, onClose, onSave }) {
-  const [form, setForm] = useState({ ...FORM_INICIAL, fecha: hoy() })
+  const [form, setForm] = useState({ ...FORM_INICIAL, vencimiento: hoy() })
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }))
 
@@ -323,18 +397,19 @@ function MovimientoModal({ saving, errors, onClose, onSave }) {
 // ── Página principal ──────────────────────────────────────
 
 export default function FinanzasPage() {
-  const hoyDate  = new Date()
-  const [mes, setMes]       = useState(hoyDate.getMonth())
-  const [anio, setAnio]     = useState(hoyDate.getFullYear())
-  const [tab, setTab]       = useState('todos')
-  const [movs, setMovs]     = useState([])
+  const hoyDate = new Date()
+  const [mes, setMes]         = useState(hoyDate.getMonth())
+  const [anio, setAnio]       = useState(hoyDate.getFullYear())
+  const [tab, setTab]         = useState('todos')
+  const [movs, setMovs]       = useState([])
+  const [todosPend, setTodosPend] = useState([])   // todos los pendientes cross-período
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [errors, setErrors]   = useState({})
-  const [modal, setModal]     = useState(null)   // null | 'nuevo' | {movimiento}
+  const [modal, setModal]     = useState(null)
   const [error, setError]     = useState(null)
 
-  // ── Carga desde Firestore ──
+  // Carga movimientos del período seleccionado
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -345,11 +420,23 @@ export default function FinanzasPage() {
       .finally(() => setLoading(false))
   }, [mes, anio])
 
-  // ── Navegación de período ──
+  // Carga todos los pendientes (cross-período) una sola vez al montar
+  useEffect(() => {
+    getDocs(query(collection(db, 'movimientos'), where('estado', '==', 'pendiente')))
+      .then(snap => setTodosPend(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => {})
+  }, [])
+
+  // Pendientes de otros períodos — siempre visible, ordenados por vencimiento
+  const pendientesOtros = useMemo(() => {
+    const periodoActual = periodoKey(mes, anio)
+    return [...todosPend.filter(m => m.periodo !== periodoActual)]
+      .sort((a, b) => (a.vencimiento ?? '').localeCompare(b.vencimiento ?? ''))
+  }, [todosPend, mes, anio])
+
   const prevMes = () => { if (mes === 0) { setMes(11); setAnio(a => a - 1) } else setMes(m => m - 1) }
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1) } else setMes(m => m + 1) }
 
-  // ── Tabs ──
   const filtrados = useMemo(() => {
     if (tab === 'ingresos')   return movs.filter(m => m.tipo === 'ingreso')
     if (tab === 'egresos')    return movs.filter(m => m.tipo === 'egreso')
@@ -357,7 +444,6 @@ export default function FinanzasPage() {
     return movs
   }, [movs, tab])
 
-  // ── KPIs ──
   const ingresosConf  = movs.filter(m => m.tipo === 'ingreso' && m.estado === 'confirmado').reduce((s, m) => s + m.monto, 0)
   const egresoConf    = movs.filter(m => m.tipo === 'egreso'  && m.estado === 'confirmado').reduce((s, m) => s + m.monto, 0)
   const ingresosPend  = movs.filter(m => m.tipo === 'ingreso' && m.estado === 'pendiente').reduce((s, m) => s + m.monto, 0)
@@ -365,7 +451,6 @@ export default function FinanzasPage() {
   const resultadoReal = ingresosConf - egresoConf
   const resultadoProy = (ingresosConf + ingresosPend) - (egresoConf + egresosPend)
 
-  // ── CRUD ──
   const handleSave = async (formData) => {
     const resultado = movimientoSchema.safeParse(formData)
     if (!resultado.success) {
@@ -376,12 +461,24 @@ export default function FinanzasPage() {
     }
     setErrors({})
     setSaving(true)
-    const periodo = periodoKey(mes, anio)
+
+    // El período se deriva del vencimiento, no del mes que se está mirando
+    const periodo = periodoDeVencimiento(resultado.data.vencimiento)
     const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', creadoEl: serverTimestamp() }
 
     try {
       const ref = await addDoc(collection(db, 'movimientos'), payload)
-      setMovs(ms => [...ms, { id: ref.id, ...payload }])
+      const nuevo = { id: ref.id, ...payload }
+
+      // Si cae en el período actual, aparece en la lista principal
+      if (periodo === periodoKey(mes, anio)) {
+        setMovs(ms => [...ms, nuevo])
+      }
+      // Si es pendiente y es de otro período, aparece en el panel de vencimientos
+      if (payload.estado === 'pendiente' && periodo !== periodoKey(mes, anio)) {
+        setTodosPend(ms => [...ms, nuevo])
+      }
+
       setModal(null)
     } catch (e) {
       setErrors({ _general: e.message })
@@ -394,6 +491,7 @@ export default function FinanzasPage() {
     try {
       await updateDoc(doc(db, 'movimientos', id), { estado: 'confirmado' })
       setMovs(ms => ms.map(m => m.id === id ? { ...m, estado: 'confirmado' } : m))
+      setTodosPend(ms => ms.filter(m => m.id !== id))
     } catch (e) {
       alert('Error al confirmar: ' + e.message)
     }
@@ -404,6 +502,7 @@ export default function FinanzasPage() {
     try {
       await deleteDoc(doc(db, 'movimientos', id))
       setMovs(ms => ms.filter(m => m.id !== id))
+      setTodosPend(ms => ms.filter(m => m.id !== id))
     } catch (e) {
       alert('Error al eliminar: ' + e.message)
     }
@@ -441,6 +540,14 @@ export default function FinanzasPage() {
         </button>
       </div>
 
+      {/* ── Panel compromisos de otros períodos — siempre visible ── */}
+      <VencimientosPanel
+        items={pendientesOtros}
+        periodoActual={periodoKey(mes, anio)}
+        onConfirm={handleConfirm}
+        onDelete={handleDelete}
+      />
+
       {/* ── Selector de período ── */}
       <div className="d-flex align-items-center gap-3 mb-4">
         <button
@@ -462,7 +569,6 @@ export default function FinanzasPage() {
         </button>
       </div>
 
-      {/* ── Estado de carga / error ── */}
       {loading && (
         <div className="text-center py-5">
           <div className="spinner-border spinner-border-sm" style={{ color: 'var(--primary-color)' }} />
