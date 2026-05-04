@@ -70,6 +70,7 @@ function LandingPage() {
       <Helmet>
         <title>Máquinas de Café y Vending en Argentina | Nexus</title>
         <meta name="description" content="Servicio premium de máquinas de café y vending para empresas en Argentina. Instalación en comodato, insumos y soporte técnico." />
+        <meta name="google-site-verification" content="bsVZIMI1q5K0QhWHQXzYA_Em3RfRqSLDlMFxl4lHVsc" />
         <link rel="canonical" href="https://surtinex.com" />
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}
