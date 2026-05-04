@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /login
+Disallow: /admin
 
-# Descomentar y reemplazar con el dominio final en producción
-# Sitemap: https://tudominio.com.ar/sitemap.xml
+Sitemap: https://surtinex.com/sitemap.xml

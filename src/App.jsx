@@ -48,7 +48,7 @@ function LandingPage() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Nexus Vending",
-    "image": "https://tudominio.com.ar/assets/nexus-logo.png",
+    "image": "https://surtinex.com/assets/nexus-logo.png",
     "description": "Servicio premium de máquinas de café y vending para empresas en Argentina.",
     "address": {
       "@type": "PostalAddress",
@@ -60,7 +60,7 @@ function LandingPage() {
       "latitude": -34.6037,
       "longitude": -58.3816
     },
-    "url": "https://tudominio.com.ar",
+    "url": "https://surtinex.com",
     "telephone": "+5491100000000",
     "priceRange": "$$"
   };
@@ -70,7 +70,7 @@ function LandingPage() {
       <Helmet>
         <title>Máquinas de Café y Vending en Argentina | Nexus</title>
         <meta name="description" content="Servicio premium de máquinas de café y vending para empresas en Argentina. Instalación en comodato, insumos y soporte técnico." />
-        <link rel="canonical" href="https://tudominio.com.ar" />
+        <link rel="canonical" href="https://surtinex.com" />
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}
         </script>
