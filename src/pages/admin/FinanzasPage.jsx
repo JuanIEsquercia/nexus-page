@@ -409,12 +409,18 @@ export default function FinanzasPage() {
   const [modal, setModal]     = useState(null)
   const [error, setError]     = useState(null)
 
-  // Carga movimientos del período seleccionado
+  // Carga movimientos cuyo vencimiento cae en el mes/año seleccionado
   useEffect(() => {
     setLoading(true)
     setError(null)
-    const periodo = periodoKey(mes, anio)
-    getDocs(query(collection(db, 'movimientos'), where('periodo', '==', periodo)))
+    const mesStr = String(mes + 1).padStart(2, '0')
+    const desde  = `${anio}-${mesStr}-01`
+    const hasta  = `${anio}-${mesStr}-31`
+    getDocs(query(
+      collection(db, 'movimientos'),
+      where('vencimiento', '>=', desde),
+      where('vencimiento', '<=', hasta),
+    ))
       .then(snap => setMovs(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
@@ -427,10 +433,11 @@ export default function FinanzasPage() {
       .catch(() => {})
   }, [])
 
-  // Pendientes de otros períodos — siempre visible, ordenados por vencimiento
+  // Pendientes cuyo vencimiento NO cae en el mes actual — siempre visible
   const pendientesOtros = useMemo(() => {
-    const periodoActual = periodoKey(mes, anio)
-    return [...todosPend.filter(m => m.periodo !== periodoActual)]
+    const mesStr = String(mes + 1).padStart(2, '0')
+    const prefijo = `${anio}-${mesStr}`
+    return [...todosPend.filter(m => !(m.vencimiento ?? '').startsWith(prefijo))]
       .sort((a, b) => (a.vencimiento ?? '').localeCompare(b.vencimiento ?? ''))
   }, [todosPend, mes, anio])
 
@@ -470,12 +477,14 @@ export default function FinanzasPage() {
       const ref = await addDoc(collection(db, 'movimientos'), payload)
       const nuevo = { id: ref.id, ...payload }
 
-      // Si cae en el período actual, aparece en la lista principal
-      if (periodo === periodoKey(mes, anio)) {
+      const mesStr  = String(mes + 1).padStart(2, '0')
+      const prefijo = `${anio}-${mesStr}`
+      const enMesActual = (nuevo.vencimiento ?? '').startsWith(prefijo)
+
+      if (enMesActual) {
         setMovs(ms => [...ms, nuevo])
       }
-      // Si es pendiente y es de otro período, aparece en el panel de vencimientos
-      if (payload.estado === 'pendiente' && periodo !== periodoKey(mes, anio)) {
+      if (payload.estado === 'pendiente' && !enMesActual) {
         setTodosPend(ms => [...ms, nuevo])
       }
 
