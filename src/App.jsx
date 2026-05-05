@@ -18,6 +18,9 @@ import ContactSection from './components/ContactSection'
 // Auth
 import LoginPage from './pages/LoginPage'
 
+// Pública — visita a distancia
+import VisitaRemotaPage from './pages/VisitaRemotaPage'
+
 // Admin layout
 import AdminLayout from './components/admin/AdminLayout'
 
@@ -99,6 +102,7 @@ function App() {
             {/* Pública */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/visita/:tokenId" element={<VisitaRemotaPage />} />
 
             {/* Admin — protegido */}
             <Route
