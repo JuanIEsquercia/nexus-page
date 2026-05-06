@@ -3,4 +3,4 @@ Allow: /
 Disallow: /login
 Disallow: /admin
 
-Sitemap: https://surtinex.com/sitemap.xml
+Sitemap: https://www.surtinex.com/sitemap.xml
