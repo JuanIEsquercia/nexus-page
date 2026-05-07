@@ -14,8 +14,18 @@ dist-ssr
 
 # Environment variables
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Firebase service account keys (nunca commitear)
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+
+# Certificados y claves privadas
+*.pem
+*.key
+*.p12
+*.cert
 
 # Claude Code
 .claude/
