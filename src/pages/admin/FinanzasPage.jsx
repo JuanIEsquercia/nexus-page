@@ -6,7 +6,7 @@ import {
 import { db } from '../../firebase/firebase'
 import { movimientoSchema } from '../../lib/schemas'
 import {
-  BsPlus, BsTrash, BsCheckCircleFill,
+  BsPlus, BsTrash, BsCheckCircleFill, BsPencilFill,
   BsClockFill, BsArrowUpCircleFill, BsArrowDownCircleFill,
   BsXLg, BsChevronLeft, BsChevronRight, BsExclamationTriangleFill,
 } from 'react-icons/bs'
@@ -72,7 +72,7 @@ function SummaryCard({ label, monto, color, icon: Icon, sub }) {
   )
 }
 
-function MovimientoRow({ mov, onConfirm, onDelete, extraLabel }) {
+function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel }) {
   const esIngreso   = mov.tipo === 'ingreso'
   const esPendiente = mov.estado === 'pendiente'
   const esVencido   = esPendiente && mov.vencimiento && mov.vencimiento < hoy()
@@ -148,6 +148,14 @@ function MovimientoRow({ mov, onConfirm, onDelete, extraLabel }) {
           </button>
         )}
         <button
+          onClick={() => onEdit(mov)}
+          title="Editar"
+          className="btn btn-sm p-1"
+          style={{ color: 'var(--text-secondary)', background: 'transparent', border: 'none', borderRadius: '0.4rem', opacity: 0.6 }}
+        >
+          <BsPencilFill size={12} />
+        </button>
+        <button
           onClick={() => onDelete(mov.id)}
           className="btn btn-sm p-1"
           style={{ color: 'var(--danger-color)', background: 'transparent', border: 'none', borderRadius: '0.4rem', opacity: 0.6 }}
@@ -161,7 +169,7 @@ function MovimientoRow({ mov, onConfirm, onDelete, extraLabel }) {
 
 // ── Panel compromisos pendientes de otros períodos ────────
 
-function VencimientosPanel({ items, periodoActual, onConfirm, onDelete }) {
+function VencimientosPanel({ items, periodoActual, onConfirm, onDelete, onEdit }) {
   if (items.length === 0) return null
 
   const vencidos = items.filter(m => m.vencimiento && m.vencimiento < hoy())
@@ -203,6 +211,7 @@ function VencimientosPanel({ items, periodoActual, onConfirm, onDelete }) {
             mov={mov}
             onConfirm={onConfirm}
             onDelete={onDelete}
+            onEdit={onEdit}
             extraLabel={labelMes(mov.periodo)}
           />
         ))}
@@ -213,8 +222,14 @@ function VencimientosPanel({ items, periodoActual, onConfirm, onDelete }) {
 
 // ── Modal formulario ──────────────────────────────────────
 
-function MovimientoModal({ saving, errors, onClose, onSave }) {
-  const [form, setForm] = useState({ ...FORM_INICIAL, vencimiento: hoy() })
+function MovimientoModal({ saving, errors, onClose, onSave, initialData }) {
+  const [form, setForm] = useState(() =>
+    initialData
+      ? { tipo: initialData.tipo, estado: initialData.estado, descripcion: initialData.descripcion,
+          categoria: initialData.categoria, monto: String(initialData.monto),
+          vencimiento: initialData.vencimiento, notas: initialData.notas ?? '' }
+      : { ...FORM_INICIAL, vencimiento: hoy() }
+  )
 
   const set = (campo, valor) => setForm(f => ({ ...f, [campo]: valor }))
 
@@ -246,7 +261,7 @@ function MovimientoModal({ saving, errors, onClose, onSave }) {
       >
         <div className="d-flex align-items-center justify-content-between mb-4">
           <h6 className="mb-0 fw-semibold" style={{ color: 'var(--text-primary)' }}>
-            Nuevo movimiento
+            {initialData ? 'Editar movimiento' : 'Nuevo movimiento'}
           </h6>
           <button onClick={onClose} className="btn p-1" style={{ color: 'var(--text-secondary)', background: 'transparent', border: 'none' }}>
             <BsXLg size={16} />
@@ -386,7 +401,7 @@ function MovimientoModal({ saving, errors, onClose, onSave }) {
             }}
           >
             <BsCheckCircleFill size={16} />
-            {saving ? 'Guardando...' : 'Registrar movimiento'}
+            {saving ? 'Guardando...' : initialData ? 'Guardar cambios' : 'Registrar movimiento'}
           </button>
         </form>
       </div>
@@ -496,6 +511,36 @@ export default function FinanzasPage() {
     }
   }
 
+  const handleEdit = (mov) => {
+    setErrors({})
+    setModal(mov)
+  }
+
+  const handleEditSave = async (id, formData) => {
+    const resultado = movimientoSchema.safeParse(formData)
+    if (!resultado.success) {
+      const errs = {}
+      resultado.error.errors.forEach(e => { errs[e.path[0]] = e.message })
+      setErrors(errs)
+      return
+    }
+    setErrors({})
+    setSaving(true)
+    const periodo = periodoDeVencimiento(resultado.data.vencimiento)
+    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '' }
+    try {
+      await updateDoc(doc(db, 'movimientos', id), payload)
+      const updated = { id, ...payload }
+      setMovs(ms => ms.map(m => m.id === id ? updated : m))
+      setTodosPend(ms => ms.map(m => m.id === id ? updated : m))
+      setModal(null)
+    } catch (e) {
+      setErrors({ _general: e.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleConfirm = async (id) => {
     try {
       await updateDoc(doc(db, 'movimientos', id), { estado: 'confirmado' })
@@ -555,6 +600,7 @@ export default function FinanzasPage() {
         periodoActual={periodoKey(mes, anio)}
         onConfirm={handleConfirm}
         onDelete={handleDelete}
+        onEdit={handleEdit}
       />
 
       {/* ── Selector de período ── */}
@@ -680,6 +726,7 @@ export default function FinanzasPage() {
                     mov={mov}
                     onConfirm={handleConfirm}
                     onDelete={handleDelete}
+                    onEdit={handleEdit}
                   />
                 ))
             )}
@@ -693,7 +740,8 @@ export default function FinanzasPage() {
           saving={saving}
           errors={errors}
           onClose={() => { setModal(null); setErrors({}) }}
-          onSave={handleSave}
+          onSave={modal === 'nuevo' ? handleSave : (data) => handleEditSave(modal.id, data)}
+          initialData={modal === 'nuevo' ? undefined : modal}
         />
       )}
     </div>
