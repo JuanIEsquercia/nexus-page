@@ -137,6 +137,7 @@ export default function VisitaRemotaPage() {
           bebidaNombre:    bebida.nombre,
           cantidad,
           cantidadPeriodo: cantidad,
+          tokenId,
         })
       })
 
@@ -144,6 +145,7 @@ export default function VisitaRemotaPage() {
       batch.update(doc(db, 'clientes', token.clienteId, 'maquinas', token.maquinaId), {
         contadorActual: totalExpendios,
         ultimaVisita:   Timestamp.fromDate(fechaDate),
+        tokenId,
       })
 
       // 4 — Marcar token completado
