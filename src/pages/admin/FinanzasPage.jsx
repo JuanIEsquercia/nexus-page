@@ -21,7 +21,7 @@ const CATEGORIAS = {
   egreso:  ['Insumos', 'Alquiler', 'Mantenimiento', 'Sueldo', 'Servicios', 'Impuestos', 'Otro egreso'],
 }
 
-const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', vencimiento: '', notas: '' }
+const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', vencimiento: '', notas: '', cuentaPago: '', socioPago: '', origenPago: 'cuenta' }
 
 // ── Utilidades ────────────────────────────────────────────
 
@@ -389,12 +389,14 @@ function PagoModal({ mov, cuentas, socios, saving, onClose, onConfirm }) {
 
 // ── Modal formulario ──────────────────────────────────────
 
-function MovimientoModal({ saving, errors, onClose, onSave, initialData }) {
+function MovimientoModal({ saving, errors, onClose, onSave, initialData, cuentas = [], socios = [] }) {
   const [form, setForm] = useState(() =>
     initialData
       ? { tipo: initialData.tipo, estado: initialData.estado, descripcion: initialData.descripcion,
           categoria: initialData.categoria, monto: String(initialData.monto),
-          vencimiento: initialData.vencimiento, notas: initialData.notas ?? '' }
+          vencimiento: initialData.vencimiento, notas: initialData.notas ?? '',
+          cuentaPago: initialData.cuentaPago ?? '', socioPago: initialData.socioPago ?? '',
+          origenPago: initialData.socioPago ? 'socio' : 'cuenta' }
       : { ...FORM_INICIAL, vencimiento: hoy() }
   )
 
@@ -483,6 +485,83 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData }) {
               ))}
             </div>
           </div>
+
+          {/* Origen del pago — solo cuando confirmado */}
+          {form.estado === 'confirmado' && (
+            <div className="mb-3">
+              <label style={labelStyle}>
+                {form.tipo === 'ingreso' ? '¿A qué cuenta entró?' : '¿Quién pagó?'}
+              </label>
+
+              {/* Toggle cuenta/socio — solo para egresos */}
+              {form.tipo === 'egreso' && (
+                <div className="d-flex gap-2 mb-2">
+                  {[['cuenta', 'Cuenta empresa'], ['socio', 'Un socio']].map(([v, l]) => (
+                    <button
+                      key={v} type="button"
+                      onClick={() => { set('origenPago', v); set('cuentaPago', ''); set('socioPago', '') }}
+                      style={{
+                        flex: 1, padding: '0.45rem', borderRadius: '0.6rem',
+                        fontSize: '0.78rem', fontWeight: 500, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                        ...(form.origenPago === v
+                          ? { background: 'rgba(14,165,233,0.1)', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }
+                          : { background: 'transparent', borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }
+                        ),
+                      }}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selector de cuenta */}
+              {(form.tipo === 'ingreso' || form.origenPago === 'cuenta') && (
+                cuentas.filter(c => c.activo).length === 0
+                  ? <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>Sin cuentas activas. Creá una en Tesorería.</p>
+                  : <div className="d-flex flex-wrap gap-1">
+                      {cuentas.filter(c => c.activo).map(c => (
+                        <button
+                          key={c.id} type="button" onClick={() => set('cuentaPago', c.id)}
+                          style={{
+                            padding: '0.25rem 0.65rem', borderRadius: '2rem',
+                            fontSize: '0.72rem', fontWeight: 500, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                            ...(form.cuentaPago === c.id
+                              ? { background: 'rgba(14,165,233,0.12)', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }
+                              : { background: 'transparent', borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }
+                            ),
+                          }}
+                        >
+                          {c.nombre}
+                        </button>
+                      ))}
+                    </div>
+              )}
+
+              {/* Selector de socio */}
+              {form.tipo === 'egreso' && form.origenPago === 'socio' && (
+                socios.filter(s => s.activo).length === 0
+                  ? <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>Sin socios activos. Creá uno en Tesorería.</p>
+                  : <div className="d-flex flex-wrap gap-1">
+                      {socios.filter(s => s.activo).map(s => (
+                        <button
+                          key={s.id} type="button" onClick={() => set('socioPago', s.id)}
+                          style={{
+                            padding: '0.25rem 0.65rem', borderRadius: '2rem',
+                            fontSize: '0.72rem', fontWeight: 500, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                            ...(form.socioPago === s.id
+                              ? { background: 'rgba(167,139,250,0.12)', borderColor: '#a78bfa', color: '#a78bfa' }
+                              : { background: 'transparent', borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }
+                            ),
+                          }}
+                        >
+                          {s.nombre}
+                        </button>
+                      ))}
+                    </div>
+              )}
+            </div>
+          )}
 
           {/* Descripción */}
           <div className="mb-3">
@@ -722,7 +801,11 @@ export default function FinanzasPage() {
     setSaving(true)
 
     const periodo = periodoDeVencimiento(resultado.data.vencimiento)
-    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', creadoEl: serverTimestamp() }
+    const esConf  = resultado.data.estado === 'confirmado'
+    const porSocio = esConf && resultado.data.tipo === 'egreso' && formData.origenPago === 'socio'
+    const cuentaPago = esConf && !porSocio ? (formData.cuentaPago || null) : null
+    const socioPago  = porSocio ? (formData.socioPago  || null) : null
+    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', creadoEl: serverTimestamp(), cuentaPago, socioPago }
 
     try {
       const ref = await addDoc(collection(db, 'movimientos'), payload)
@@ -762,8 +845,12 @@ export default function FinanzasPage() {
     }
     setErrors({})
     setSaving(true)
-    const periodo = periodoDeVencimiento(resultado.data.vencimiento)
-    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '' }
+    const periodo  = periodoDeVencimiento(resultado.data.vencimiento)
+    const esConf2  = resultado.data.estado === 'confirmado'
+    const porSocio2 = esConf2 && resultado.data.tipo === 'egreso' && formData.origenPago === 'socio'
+    const cuentaPago2 = esConf2 && !porSocio2 ? (formData.cuentaPago || null) : null
+    const socioPago2  = porSocio2 ? (formData.socioPago  || null) : null
+    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', cuentaPago: cuentaPago2, socioPago: socioPago2 }
     try {
       await updateDoc(doc(db, 'movimientos', id), payload)
       const updated = { id, ...payload }
@@ -1030,6 +1117,8 @@ export default function FinanzasPage() {
           onClose={() => { setModal(null); setErrors({}) }}
           onSave={modal === 'nuevo' ? handleSave : (data) => handleEditSave(modal.id, data)}
           initialData={modal === 'nuevo' ? undefined : modal}
+          cuentas={cuentas}
+          socios={socios}
         />
       )}
 
