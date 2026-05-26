@@ -15,6 +15,7 @@ import {
   BsExclamationTriangleFill,
   BsCpu,
   BsCashStack,
+  BsWallet2,
 } from 'react-icons/bs'
 
 // Los primeros 4 aparecen también en el bottom nav mobile
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { to: '/admin/clientes',     label: 'Clientes',    icon: BsPeopleFill },
   { to: '/admin/stock',        label: 'Stock',       icon: BsBoxSeam },
   { to: '/admin/finanzas',     label: 'Finanzas',    icon: BsCashStack },
+  { to: '/admin/tesoreria',   label: 'Tesorería',   icon: BsWallet2 },
   { to: '/admin/balance',      label: 'Balance',     icon: BsGraphUp },
   { to: '/admin/analytics',    label: 'Analytics',   icon: BsBarChartFill },
   { to: '/admin/documentos',   label: 'Documentos',  icon: BsFileEarmarkText },

@@ -9,6 +9,7 @@ import {
   BsPlus, BsTrash, BsCheckCircleFill, BsPencilFill,
   BsClockFill, BsArrowUpCircleFill, BsArrowDownCircleFill,
   BsXLg, BsChevronLeft, BsChevronRight, BsExclamationTriangleFill,
+  BsWallet2, BsPeopleFill,
 } from 'react-icons/bs'
 
 // ── Constantes ────────────────────────────────────────────
@@ -28,7 +29,6 @@ function periodoKey(mes, anio) {
   return `${anio}-${String(mes + 1).padStart(2, '0')}`
 }
 
-// Deriva el período directamente del campo vencimiento (YYYY-MM-DD → YYYY-MM)
 function periodoDeVencimiento(vencimiento) {
   return vencimiento.slice(0, 7)
 }
@@ -72,7 +72,8 @@ function SummaryCard({ label, monto, color, icon: Icon, sub }) {
   )
 }
 
-function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel }) {
+// mov.onConfirm recibe el objeto completo para poder abrir el modal de pago
+function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel, pagoLabel }) {
   const esIngreso   = mov.tipo === 'ingreso'
   const esPendiente = mov.estado === 'pendiente'
   const esVencido   = esPendiente && mov.vencimiento && mov.vencimiento < hoy()
@@ -105,6 +106,14 @@ function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel }) {
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.68rem' }}>{extraLabel}</span>
             </>
           )}
+          {pagoLabel && (
+            <>
+              <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
+              <span style={{ color: 'var(--primary-color)', fontSize: '0.68rem', fontWeight: 500 }}>
+                {pagoLabel}
+              </span>
+            </>
+          )}
           {esPendiente && (
             <>
               <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
@@ -134,8 +143,8 @@ function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel }) {
       <div className="d-flex gap-1 flex-shrink-0">
         {esPendiente && (
           <button
-            onClick={() => onConfirm(mov.id)}
-            title={mov.tipo === 'ingreso' ? 'Marcar como cobrado' : 'Marcar como pagado'}
+            onClick={() => onConfirm(mov)}
+            title={mov.tipo === 'ingreso' ? 'Registrar cobro' : 'Registrar pago'}
             className="btn btn-sm p-1 d-flex align-items-center gap-1"
             style={{
               color: 'var(--success-color)', background: 'rgba(34,197,94,0.1)',
@@ -169,7 +178,7 @@ function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel }) {
 
 // ── Panel compromisos pendientes de otros períodos ────────
 
-function VencimientosPanel({ items, periodoActual, onConfirm, onDelete, onEdit }) {
+function VencimientosPanel({ items, periodoActual, onConfirm, onDelete, onEdit, cuentasMap, sociosMap }) {
   if (items.length === 0) return null
 
   const vencidos = items.filter(m => m.vencimiento && m.vencimiento < hoy())
@@ -213,8 +222,166 @@ function VencimientosPanel({ items, periodoActual, onConfirm, onDelete, onEdit }
             onDelete={onDelete}
             onEdit={onEdit}
             extraLabel={labelMes(mov.periodo)}
+            pagoLabel={buildPagoLabel(mov, cuentasMap, sociosMap)}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Modal registrar pago / cobro ──────────────────────────
+
+function PagoModal({ mov, cuentas, socios, saving, onClose, onConfirm }) {
+  const esIngreso      = mov.tipo === 'ingreso'
+  const cuentasActivas = cuentas.filter(c => c.activo)
+  const sociosActivos  = socios.filter(s => s.activo)
+
+  const [origen,   setOrigen]   = useState('cuenta')
+  const [cuentaId, setCuentaId] = useState(cuentasActivas[0]?.id ?? '')
+  const [socioId,  setSocioId]  = useState(sociosActivos[0]?.id ?? '')
+
+  const puedeConfirmar = origen === 'cuenta' ? !!cuentaId : !!socioId
+
+  const handleSubmit = () => {
+    if (!puedeConfirmar) return
+    if (esIngreso || origen === 'cuenta') {
+      onConfirm(mov.id, { cuentaPago: cuentaId, socioPago: null })
+    } else {
+      onConfirm(mov.id, { cuentaPago: null, socioPago: socioId })
+    }
+  }
+
+  const labelStyle = { color: 'var(--text-secondary)', fontSize: '0.78rem', marginBottom: '0.3rem', display: 'block' }
+
+  const chipStyle = (activo, accentColor) => ({
+    padding: '0.4rem 0.9rem', borderRadius: '2rem',
+    fontSize: '0.82rem', fontWeight: 500, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+    ...(activo
+      ? { background: `${accentColor}18`, borderColor: accentColor, color: accentColor }
+      : { background: 'transparent', borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }
+    ),
+  })
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1050,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1rem',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        style={{
+          width: '100%', maxWidth: 440,
+          background: 'var(--bg-secondary)', borderRadius: '1.25rem',
+          padding: '1.5rem 1.25rem',
+          border: '1px solid var(--border-color)',
+        }}
+      >
+        <div className="d-flex align-items-start justify-content-between mb-4">
+          <div>
+            <h6 className="mb-0 fw-semibold" style={{ color: 'var(--text-primary)' }}>
+              {esIngreso ? 'Registrar cobro' : 'Registrar pago'}
+            </h6>
+            <p className="mb-0 mt-1" style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+              {mov.descripcion} · {formatMonto(mov.monto)}
+            </p>
+          </div>
+          <button onClick={onClose} className="btn p-1" style={{ color: 'var(--text-secondary)', background: 'transparent', border: 'none' }}>
+            <BsXLg size={16} />
+          </button>
+        </div>
+
+        {/* Selector origen — solo para egresos */}
+        {!esIngreso && (
+          <div className="mb-3">
+            <label style={labelStyle}>¿Quién pagó?</label>
+            <div className="d-flex gap-2">
+              {[['cuenta', 'Cuenta empresa'], ['socio', 'Un socio']].map(([v, l]) => (
+                <button
+                  key={v} type="button" onClick={() => setOrigen(v)}
+                  style={{
+                    flex: 1, padding: '0.5rem', borderRadius: '0.6rem',
+                    fontSize: '0.82rem', fontWeight: 500, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                    ...(origen === v
+                      ? { background: 'rgba(14,165,233,0.1)', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }
+                      : { background: 'transparent', borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }
+                    ),
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Selector de cuenta */}
+        {(esIngreso || origen === 'cuenta') && (
+          <div className="mb-4">
+            <label style={labelStyle}>
+              {esIngreso ? '¿A qué cuenta entró?' : '¿Desde qué cuenta?'}
+            </label>
+            {cuentasActivas.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                No hay cuentas activas. Creá una en Tesorería primero.
+              </p>
+            ) : (
+              <div className="d-flex flex-wrap gap-2">
+                {cuentasActivas.map(c => (
+                  <button
+                    key={c.id} type="button" onClick={() => setCuentaId(c.id)}
+                    style={chipStyle(cuentaId === c.id, 'var(--primary-color)')}
+                  >
+                    {c.nombre}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Selector de socio */}
+        {!esIngreso && origen === 'socio' && (
+          <div className="mb-4">
+            <label style={labelStyle}>¿Qué socio pagó?</label>
+            {sociosActivos.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                No hay socios registrados. Creá uno en Tesorería primero.
+              </p>
+            ) : (
+              <div className="d-flex flex-wrap gap-2">
+                {sociosActivos.map(s => (
+                  <button
+                    key={s.id} type="button" onClick={() => setSocioId(s.id)}
+                    style={chipStyle(socioId === s.id, '#a78bfa')}
+                  >
+                    {s.nombre}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={saving || !puedeConfirmar}
+          className="btn w-100 d-flex align-items-center justify-content-center gap-2"
+          style={{
+            background: 'var(--primary-gradient)', color: '#fff', border: 'none',
+            borderRadius: '0.75rem', padding: '0.7rem', fontWeight: 600, fontSize: '0.9rem',
+            boxShadow: '0 4px 14px rgba(14,165,233,0.3)',
+            opacity: saving || !puedeConfirmar ? 0.6 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <BsCheckCircleFill size={16} />
+          {saving ? 'Confirmando...' : esIngreso ? 'Confirmar cobro' : 'Confirmar pago'}
+        </button>
       </div>
     </div>
   )
@@ -409,6 +576,15 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData }) {
   )
 }
 
+// ── Helper label de pago ──────────────────────────────────
+
+function buildPagoLabel(mov, cuentasMap, sociosMap) {
+  if (mov.estado !== 'confirmado') return null
+  if (mov.cuentaPago && cuentasMap[mov.cuentaPago]) return cuentasMap[mov.cuentaPago].nombre
+  if (mov.socioPago  && sociosMap[mov.socioPago])   return `Socio: ${sociosMap[mov.socioPago].nombre}`
+  return null
+}
+
 // ── Página principal ──────────────────────────────────────
 
 export default function FinanzasPage() {
@@ -417,14 +593,18 @@ export default function FinanzasPage() {
   const [anio, setAnio]       = useState(hoyDate.getFullYear())
   const [tab, setTab]         = useState('todos')
   const [movs, setMovs]       = useState([])
-  const [todosPend, setTodosPend] = useState([])   // todos los pendientes cross-período
+  const [todosPend, setTodosPend] = useState([])
+  const [cuentas, setCuentas] = useState([])
+  const [socios, setSocios]   = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
+  const [pagoSaving, setPagoSaving] = useState(false)
   const [errors, setErrors]   = useState({})
   const [modal, setModal]     = useState(null)
+  const [pagoModal, setPagoModal] = useState(null)
   const [error, setError]     = useState(null)
 
-  // Carga movimientos cuyo vencimiento cae en el mes/año seleccionado
+  // Carga movimientos del período seleccionado
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -441,14 +621,27 @@ export default function FinanzasPage() {
       .finally(() => setLoading(false))
   }, [mes, anio])
 
-  // Carga todos los pendientes (cross-período) una sola vez al montar
+  // Carga pendientes cross-período
   useEffect(() => {
     getDocs(query(collection(db, 'movimientos'), where('estado', '==', 'pendiente')))
       .then(snap => setTodosPend(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
       .catch(() => {})
   }, [])
 
-  // Pendientes cuyo vencimiento NO cae en el mes actual — siempre visible
+  // Carga cuentas y socios una sola vez
+  useEffect(() => {
+    Promise.all([
+      getDocs(collection(db, 'cuentas')),
+      getDocs(collection(db, 'socios')),
+    ]).then(([cSnap, sSnap]) => {
+      setCuentas(cSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setSocios(sSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+  }, [])
+
+  const cuentasMap = useMemo(() => Object.fromEntries(cuentas.map(c => [c.id, c])), [cuentas])
+  const sociosMap  = useMemo(() => Object.fromEntries(socios.map(s => [s.id, s])),  [socios])
+
   const pendientesOtros = useMemo(() => {
     const mesStr = String(mes + 1).padStart(2, '0')
     const prefijo = `${anio}-${mesStr}`
@@ -473,6 +666,50 @@ export default function FinanzasPage() {
   const resultadoReal = ingresosConf - egresoConf
   const resultadoProy = (ingresosConf + ingresosPend) - (egresoConf + egresosPend)
 
+  // Saldo por cuenta en el período actual
+  const saldosPorCuenta = useMemo(() => {
+    return cuentas.filter(c => c.activo).map(cuenta => {
+      const ingr = movs.filter(m => m.tipo === 'ingreso' && m.estado === 'confirmado' && m.cuentaPago === cuenta.id)
+        .reduce((s, m) => s + m.monto, 0)
+      const egr = movs.filter(m => m.tipo === 'egreso' && m.estado === 'confirmado' && m.cuentaPago === cuenta.id)
+        .reduce((s, m) => s + m.monto, 0)
+      return { ...cuenta, ingr, egr, neto: ingr - egr }
+    }).filter(c => c.ingr > 0 || c.egr > 0)
+  }, [cuentas, movs])
+
+  // Adelantos de socios en el período actual
+  const adelantosPorSocio = useMemo(() => {
+    return socios.filter(s => s.activo).map(socio => {
+      const total = movs.filter(m => m.tipo === 'egreso' && m.estado === 'confirmado' && m.socioPago === socio.id)
+        .reduce((s, m) => s + m.monto, 0)
+      return { ...socio, total }
+    }).filter(s => s.total > 0)
+  }, [socios, movs])
+
+  // Abre el modal de pago (reemplaza el confirm directo)
+  const handleAbrirPago = (mov) => {
+    setPagoModal(mov)
+  }
+
+  const handleConfirmarPago = async (id, { cuentaPago, socioPago }) => {
+    setPagoSaving(true)
+    try {
+      await updateDoc(doc(db, 'movimientos', id), {
+        estado: 'confirmado',
+        cuentaPago: cuentaPago ?? null,
+        socioPago:  socioPago  ?? null,
+      })
+      const patch = { estado: 'confirmado', cuentaPago: cuentaPago ?? null, socioPago: socioPago ?? null }
+      setMovs(ms => ms.map(m => m.id === id ? { ...m, ...patch } : m))
+      setTodosPend(ms => ms.filter(m => m.id !== id))
+      setPagoModal(null)
+    } catch (e) {
+      alert('Error al confirmar: ' + e.message)
+    } finally {
+      setPagoSaving(false)
+    }
+  }
+
   const handleSave = async (formData) => {
     const resultado = movimientoSchema.safeParse(formData)
     if (!resultado.success) {
@@ -484,7 +721,6 @@ export default function FinanzasPage() {
     setErrors({})
     setSaving(true)
 
-    // El período se deriva del vencimiento, no del mes que se está mirando
     const periodo = periodoDeVencimiento(resultado.data.vencimiento)
     const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', creadoEl: serverTimestamp() }
 
@@ -541,16 +777,6 @@ export default function FinanzasPage() {
     }
   }
 
-  const handleConfirm = async (id) => {
-    try {
-      await updateDoc(doc(db, 'movimientos', id), { estado: 'confirmado' })
-      setMovs(ms => ms.map(m => m.id === id ? { ...m, estado: 'confirmado' } : m))
-      setTodosPend(ms => ms.filter(m => m.id !== id))
-    } catch (e) {
-      alert('Error al confirmar: ' + e.message)
-    }
-  }
-
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este movimiento?')) return
     try {
@@ -594,13 +820,15 @@ export default function FinanzasPage() {
         </button>
       </div>
 
-      {/* ── Panel compromisos de otros períodos — siempre visible ── */}
+      {/* ── Panel compromisos de otros períodos ── */}
       <VencimientosPanel
         items={pendientesOtros}
         periodoActual={periodoKey(mes, anio)}
-        onConfirm={handleConfirm}
+        onConfirm={handleAbrirPago}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        cuentasMap={cuentasMap}
+        sociosMap={sociosMap}
       />
 
       {/* ── Selector de período ── */}
@@ -640,7 +868,7 @@ export default function FinanzasPage() {
       {!loading && !error && (
         <>
           {/* ── Cards KPI ── */}
-          <div className="d-flex flex-wrap gap-2 mb-4">
+          <div className="d-flex flex-wrap gap-2 mb-3">
             <SummaryCard
               label="Ingresos confirmados"
               monto={ingresosConf}
@@ -668,6 +896,65 @@ export default function FinanzasPage() {
               </p>
             </div>
           </div>
+
+          {/* ── Saldos por cuenta ── */}
+          {saldosPorCuenta.length > 0 && (
+            <div className="mb-3">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <BsWallet2 size={13} style={{ color: 'var(--primary-color)' }} />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 500 }}>
+                  Cuentas — movimientos del período
+                </span>
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                {saldosPorCuenta.map(c => (
+                  <div
+                    key={c.id}
+                    className="rounded-3 p-3"
+                    style={{
+                      background: 'var(--bg-secondary)',
+                      border: `1px solid ${c.neto >= 0 ? 'rgba(14,165,233,0.25)' : 'rgba(239,68,68,0.2)'}`,
+                      flex: '1 1 120px', minWidth: 0,
+                    }}
+                  >
+                    <p className="mb-1" style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>{c.nombre}</p>
+                    <p className="mb-0 fw-bold" style={{ color: c.neto >= 0 ? 'var(--primary-color)' : 'var(--danger-color)', fontSize: '1rem' }}>
+                      {c.neto >= 0 ? '+' : ''}{formatMonto(c.neto)}
+                    </p>
+                    <p className="mb-0 mt-1" style={{ color: 'var(--text-secondary)', fontSize: '0.68rem' }}>
+                      ↑{formatMonto(c.ingr)} · ↓{formatMonto(c.egr)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Adelantos de socios ── */}
+          {adelantosPorSocio.length > 0 && (
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <BsPeopleFill size={13} style={{ color: '#a78bfa' }} />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 500 }}>
+                  Adelantos de socios — a reembolsar
+                </span>
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                {adelantosPorSocio.map(s => (
+                  <div
+                    key={s.id}
+                    className="rounded-3 p-3"
+                    style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(167,139,250,0.25)', flex: '1 1 120px', minWidth: 0 }}
+                  >
+                    <p className="mb-1" style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>{s.nombre}</p>
+                    <p className="mb-0 fw-bold" style={{ color: '#a78bfa', fontSize: '1rem' }}>
+                      {formatMonto(s.total)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Tabs ── */}
           <div
@@ -724,9 +1011,10 @@ export default function FinanzasPage() {
                   <MovimientoRow
                     key={mov.id}
                     mov={mov}
-                    onConfirm={handleConfirm}
+                    onConfirm={handleAbrirPago}
                     onDelete={handleDelete}
                     onEdit={handleEdit}
+                    pagoLabel={buildPagoLabel(mov, cuentasMap, sociosMap)}
                   />
                 ))
             )}
@@ -734,7 +1022,7 @@ export default function FinanzasPage() {
         </>
       )}
 
-      {/* ── Modal ── */}
+      {/* ── Modal nuevo/editar ── */}
       {modal && (
         <MovimientoModal
           saving={saving}
@@ -742,6 +1030,18 @@ export default function FinanzasPage() {
           onClose={() => { setModal(null); setErrors({}) }}
           onSave={modal === 'nuevo' ? handleSave : (data) => handleEditSave(modal.id, data)}
           initialData={modal === 'nuevo' ? undefined : modal}
+        />
+      )}
+
+      {/* ── Modal registrar pago ── */}
+      {pagoModal && (
+        <PagoModal
+          mov={pagoModal}
+          cuentas={cuentas}
+          socios={socios}
+          saving={pagoSaving}
+          onClose={() => setPagoModal(null)}
+          onConfirm={handleConfirmarPago}
         />
       )}
     </div>

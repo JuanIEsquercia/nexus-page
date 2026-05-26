@@ -57,6 +57,14 @@ export const movimientoSchema = z.object({
   notas:       z.string().optional(),
 })
 
+export const cuentaSchema = z.object({
+  nombre: z.string().min(1, 'Requerido'),
+})
+
+export const socioSchema = z.object({
+  nombre: z.string().min(2, 'Requerido'),
+})
+
 export const clienteSchema = z.object({
   razonSocial:      z.string().min(2, 'Requerido'),
   cuit:             z.string().min(1, 'Requerido'),
