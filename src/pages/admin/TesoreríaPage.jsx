@@ -1,13 +1,76 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
   collection, getDocs, addDoc, updateDoc, doc, serverTimestamp,
+  query, where,
 } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
 import {
   BsPlus, BsWallet2, BsPeopleFill, BsToggleOn, BsToggleOff,
 } from 'react-icons/bs'
 
-function SeccionLista({ titulo, icon: Icon, color, items, onToggle, onAdd, placeholder }) {
+function formatMonto(n) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
+}
+
+function ItemRow({ item, icon: Icon, color, saldo, onToggle }) {
+  const tieneSaldo = saldo !== undefined
+  const colorSaldo = saldo >= 0 ? 'var(--success-color)' : 'var(--danger-color)'
+
+  return (
+    <div
+      className="px-4 py-2 d-flex align-items-center gap-3"
+      style={{
+        borderBottom: '1px solid var(--border-color)',
+        opacity: item.activo ? 1 : 0.5,
+        transition: 'opacity 0.15s',
+      }}
+    >
+      <div
+        className="d-flex align-items-center justify-content-center rounded-2"
+        style={{
+          width: 32, height: 32, flexShrink: 0,
+          background: item.activo ? `${color}18` : 'var(--bg-primary)',
+        }}
+      >
+        <Icon size={14} style={{ color: item.activo ? color : 'var(--text-secondary)' }} />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p className="mb-0" style={{ color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 500 }}>
+          {item.nombre}
+        </p>
+        {!item.activo && (
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Inactivo</span>
+        )}
+      </div>
+
+      {tieneSaldo && (
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <p className="mb-0 fw-bold" style={{ color: colorSaldo, fontSize: '0.9rem' }}>
+            {formatMonto(saldo)}
+          </p>
+          <p className="mb-0" style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>
+            saldo acumulado
+          </p>
+        </div>
+      )}
+
+      <button
+        onClick={() => onToggle(item.id, !item.activo)}
+        title={item.activo ? 'Desactivar' : 'Activar'}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: '0.25rem', color: item.activo ? color : 'var(--text-secondary)',
+          lineHeight: 1, flexShrink: 0,
+        }}
+      >
+        {item.activo ? <BsToggleOn size={24} /> : <BsToggleOff size={24} />}
+      </button>
+    </div>
+  )
+}
+
+function SeccionLista({ titulo, icon: Icon, color, items, onToggle, onAdd, placeholder, saldos = {} }) {
   const [nombre, setNombre] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -60,45 +123,14 @@ function SeccionLista({ titulo, icon: Icon, color, items, onToggle, onAdd, place
         </div>
       ) : (
         items.map(item => (
-          <div
+          <ItemRow
             key={item.id}
-            className="px-4 py-2 d-flex align-items-center gap-3"
-            style={{
-              borderBottom: '1px solid var(--border-color)',
-              opacity: item.activo ? 1 : 0.5,
-              transition: 'opacity 0.15s',
-            }}
-          >
-            <div
-              className="d-flex align-items-center justify-content-center rounded-2"
-              style={{
-                width: 32, height: 32, flexShrink: 0,
-                background: item.activo ? `${color}18` : 'var(--bg-primary)',
-              }}
-            >
-              <Icon size={14} style={{ color: item.activo ? color : 'var(--text-secondary)' }} />
-            </div>
-
-            <span style={{ flex: 1, color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 500 }}>
-              {item.nombre}
-            </span>
-
-            {!item.activo && (
-              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Inactivo</span>
-            )}
-
-            <button
-              onClick={() => onToggle(item.id, !item.activo)}
-              title={item.activo ? 'Desactivar' : 'Activar'}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '0.25rem', color: item.activo ? color : 'var(--text-secondary)',
-                lineHeight: 1,
-              }}
-            >
-              {item.activo ? <BsToggleOn size={24} /> : <BsToggleOff size={24} />}
-            </button>
-          </div>
+            item={item}
+            icon={Icon}
+            color={color}
+            saldo={saldos[item.id]}
+            onToggle={onToggle}
+          />
         ))
       )}
 
@@ -132,19 +164,42 @@ function SeccionLista({ titulo, icon: Icon, color, items, onToggle, onAdd, place
 }
 
 export default function TesoreríaPage() {
-  const [cuentas, setCuentas] = useState([])
-  const [socios, setSocios]   = useState([])
-  const [loading, setLoading] = useState(true)
+  const [cuentas, setCuentas]   = useState([])
+  const [socios, setSocios]     = useState([])
+  const [movConf, setMovConf]   = useState([])
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     Promise.all([
       getDocs(collection(db, 'cuentas')),
       getDocs(collection(db, 'socios')),
-    ]).then(([cSnap, sSnap]) => {
+      getDocs(query(collection(db, 'movimientos'), where('estado', '==', 'confirmado'))),
+    ]).then(([cSnap, sSnap, mSnap]) => {
       setCuentas(cSnap.docs.map(d => ({ id: d.id, ...d.data() })))
       setSocios(sSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setMovConf(mSnap.docs.map(d => ({ id: d.id, ...d.data() })))
     }).finally(() => setLoading(false))
   }, [])
+
+  // Saldo acumulado por cuenta = todos los ingresos − todos los egresos confirmados con esa cuenta
+  const saldoCuenta = useMemo(() => {
+    const map = {}
+    movConf.forEach(m => {
+      if (!m.cuentaPago) return
+      map[m.cuentaPago] = (map[m.cuentaPago] ?? 0) + (m.tipo === 'ingreso' ? m.monto : -m.monto)
+    })
+    return map
+  }, [movConf])
+
+  // Adelanto acumulado por socio = total de egresos que pagó de su bolsillo (aún no reembolsados)
+  const adelantoSocio = useMemo(() => {
+    const map = {}
+    movConf.forEach(m => {
+      if (!m.socioPago) return
+      map[m.socioPago] = (map[m.socioPago] ?? 0) + m.monto
+    })
+    return map
+  }, [movConf])
 
   const addCuenta = async (nombre) => {
     const ref = await addDoc(collection(db, 'cuentas'), { nombre, activo: true, creadoEl: serverTimestamp() })
@@ -171,7 +226,7 @@ export default function TesoreríaPage() {
       <div className="mb-4">
         <h5 className="mb-1 fw-bold" style={{ color: 'var(--text-primary)' }}>Tesorería</h5>
         <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>
-          Cuentas de la empresa y socios
+          Saldo acumulado por cuenta y adelantos de socios
         </p>
       </div>
 
@@ -189,15 +244,17 @@ export default function TesoreríaPage() {
             onToggle={toggleCuenta}
             onAdd={addCuenta}
             placeholder="Ej: MercadoPago, ICBC, Efectivo..."
+            saldos={saldoCuenta}
           />
           <SeccionLista
-            titulo="Socios"
+            titulo="Socios — adelantos pendientes de reembolso"
             icon={BsPeopleFill}
             color="#a78bfa"
             items={socios}
             onToggle={toggleSocio}
             onAdd={addSocio}
             placeholder="Nombre del socio..."
+            saldos={adelantoSocio}
           />
         </>
       )}
