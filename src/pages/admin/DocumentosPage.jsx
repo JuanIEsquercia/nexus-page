@@ -224,7 +224,7 @@ export default function DocumentosPage() {
                 subtitulo={r.numero}
                 meta={[
                   r.fechaEmision ? new Date(r.fechaEmision + 'T12:00:00').toLocaleDateString('es-AR') : '',
-                  r.items?.length > 0 ? `${r.items.length} ítem${r.items.length > 1 ? 's' : ''}` : '',
+                  r.items?.length > 0 ? r.items.map(i => `${i.descripcion} ×${i.cantidad}`).join(', ') : '',
                 ].filter(Boolean).join(' · ')}
                 onPdf={() => reDescargarRemito(r)}
                 onDelete={() => pedirConfirm(r.id, 'remitos')}
