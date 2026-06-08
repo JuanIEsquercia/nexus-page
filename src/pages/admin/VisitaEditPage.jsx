@@ -127,8 +127,14 @@ export default function VisitaEditPage() {
 
       setCatalogoInsumos(insumosCtlgSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
 
-      // Visita anterior (la inmediatamente anterior a ésta en orden de fecha)
-      const todasVisitas = visitasSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      // Visita anterior (la inmediatamente anterior a ésta en orden de fecha+createdAt)
+      const todasVisitas = visitasSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const fechaDiff = (b.fecha?.seconds ?? 0) - (a.fecha?.seconds ?? 0)
+          if (fechaDiff !== 0) return fechaDiff
+          return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
+        })
       const idx = todasVisitas.findIndex((v) => v.id === visitaId)
       setVisitaAnterior(todasVisitas[idx + 1] ?? null) // la siguiente en orden desc = la anterior cronológicamente
       setEsUltimaVisita(idx === 0) // primera en desc = la más reciente

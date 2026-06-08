@@ -58,7 +58,15 @@ export default function MaquinaDetallePage() {
     ]).then(([maqSnap, cliSnap, visitasSnap, tokensSnap]) => {
       if (maqSnap.exists()) setMaquina({ id: maqSnap.id, ...maqSnap.data() })
       if (cliSnap.exists()) setCliente({ id: cliSnap.id, ...cliSnap.data() })
-      setVisitas(visitasSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      setVisitas(
+        visitasSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => {
+            const fechaDiff = (b.fecha?.seconds ?? 0) - (a.fecha?.seconds ?? 0)
+            if (fechaDiff !== 0) return fechaDiff
+            return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
+          })
+      )
 
       const ahora = new Date()
       const activo = tokensSnap.docs
@@ -488,9 +496,9 @@ export default function MaquinaDetallePage() {
                             </span>
                           )}
                         </div>
-                        {v.serviciosPeriodo != null ? (
+                        {visitaAnterior != null ? (
                           <p className="mb-0 small" style={{ color: 'var(--success-color)' }}>
-                            +{v.serviciosPeriodo} servicios en el período
+                            +{Math.max(0, v.contadorTotal - visitaAnterior.contadorTotal)} servicios en el período
                           </p>
                         ) : (
                           <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>Primera visita</p>

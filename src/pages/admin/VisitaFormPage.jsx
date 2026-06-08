@@ -64,7 +64,7 @@ export default function VisitaFormPage() {
       getDocs(query(collection(db, 'insumos'), orderBy('nombre'))),
       getDocs(query(
         collection(db, 'clientes', clienteId, 'maquinas', maquinaId, 'visitas'),
-        orderBy('fecha', 'desc'), limit(1)
+        orderBy('createdAt', 'desc'), limit(1)
       )),
     ]).then(async ([maqSnap, cliSnap, bebidasSnap, insumosSnap, visitasSnap]) => {
       const maqData = maqSnap.exists() ? { id: maqSnap.id, ...maqSnap.data() } : null
