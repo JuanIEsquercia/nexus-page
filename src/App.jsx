@@ -14,6 +14,7 @@ import ServiceModesSection from './components/ServiceModesSection'
 import FAQSection from './components/FAQSection'
 import ImageCarousel from './components/ImageCarousel'
 import ContactSection from './components/ContactSection'
+import BrandsSection from './components/BrandsSection'
 
 // Auth
 import LoginPage from './pages/LoginPage'
@@ -83,6 +84,7 @@ function LandingPage() {
       <ThemeToggle />
       <Navbar />
       <HeroSection />
+      <BrandsSection />
       <AboutSection />
       <ImageCarousel />
       <ServicesSection />
