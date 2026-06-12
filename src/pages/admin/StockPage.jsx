@@ -5,6 +5,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
 import { insumoSchema, compraSchema } from '../../lib/schemas'
+
+const emptyItem = () => ({ insumoId: '', cantidad: '', precioItem: '' })
 import { formatFecha } from '../../lib/negocio'
 import { BsPlus, BsBoxSeam, BsPencil, BsTrash, BsCartPlus, BsExclamationTriangle } from 'react-icons/bs'
 
@@ -18,14 +20,14 @@ const inputStyle = {
 const UNIDADES = ['kg', 'g', 'litros', 'ml', 'unidades', 'sobres', 'cajas', 'bolsas']
 
 // ── Modal genérico ────────────────────────────────────
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, maxWidth = 420 }) {
   return (
     <div
       className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
       style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="p-4 rounded-3 w-100" style={{ maxWidth: 420, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+      <div className="p-4 rounded-3 w-100" style={{ maxWidth, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h6 className="mb-0" style={{ color: 'var(--text-primary)' }}>{title}</h6>
           <button onClick={onClose} className="btn btn-sm" style={{ color: 'var(--text-secondary)', background: 'transparent', border: 'none', fontSize: '1.2rem', lineHeight: 1 }}>×</button>
@@ -61,7 +63,7 @@ export default function StockPage() {
 
   // Forms
   const [formInsumo, setFormInsumo] = useState({ nombre: '', unidad: 'kg', stockMinimo: '' })
-  const [formCompra, setFormCompra] = useState({ insumoId: '', cantidad: '', fecha: hoy(), notas: '' })
+  const [formCompra, setFormCompra] = useState({ fecha: hoy(), vencimiento: hoy(), notas: '', items: [emptyItem()] })
 
   const cargarInsumos = () => {
     getDocs(query(collection(db, 'insumos'), orderBy('nombre'))).then((snap) => {
@@ -87,7 +89,9 @@ export default function StockPage() {
     setSaving(true)
     try {
       if (selected) {
-        await updateDoc(doc(db, 'insumos', selected.id), { ...result.data, updatedAt: serverTimestamp() })
+        const stockCorregido = parseFloat(formInsumo.stockActual)
+        const extra = !isNaN(stockCorregido) ? { stockActual: stockCorregido } : {}
+        await updateDoc(doc(db, 'insumos', selected.id), { ...result.data, ...extra, updatedAt: serverTimestamp() })
       } else {
         await addDoc(collection(db, 'insumos'), { ...result.data, stockActual: 0, createdAt: serverTimestamp() })
       }
@@ -99,6 +103,11 @@ export default function StockPage() {
       setSaving(false)
     }
   }
+
+  const addItem    = () => setFormCompra((f) => ({ ...f, items: [...f.items, emptyItem()] }))
+  const removeItem = (idx) => setFormCompra((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }))
+  const updateItem = (idx, field, value) =>
+    setFormCompra((f) => ({ ...f, items: f.items.map((it, i) => i === idx ? { ...it, [field]: value } : it) }))
 
   // ── Registrar compra (entrada de stock) ──────────────
   const handleCompra = async (e) => {
@@ -112,25 +121,60 @@ export default function StockPage() {
     }
     setSaving(true)
     try {
-      const insumo = insumos.find((i) => i.id === result.data.insumoId)
-      const batch = writeBatch(db)
+      const batch          = writeBatch(db)
+      const compraRef      = doc(collection(db, 'compras'))
+      const vencimientoStr = result.data.vencimiento || result.data.fecha
+      const precioTotal    = result.data.items.reduce((s, it) => s + (it.precioItem || 0), 0)
 
-      // Registrar compra
-      const compraRef = doc(collection(db, 'compras'))
+      // Egreso pendiente si hay precio
+      let movimientoId = null
+      if (precioTotal > 0) {
+        const nombres = result.data.items
+          .map((it) => insumos.find((i) => i.id === it.insumoId)?.nombre ?? '')
+          .join(', ')
+        const movRef = doc(collection(db, 'movimientos'))
+        movimientoId = movRef.id
+        batch.set(movRef, {
+          tipo:               'egreso',
+          estado:             'pendiente',
+          descripcion:        `Compra de ${nombres}`,
+          categoria:          'Insumos',
+          monto:              precioTotal,
+          vencimiento:        vencimientoStr,
+          periodo:            vencimientoStr.slice(0, 7),
+          notas:              result.data.notas || '',
+          creadoEl:           serverTimestamp(),
+          cuentaPago:         null,
+          socioPago:          null,
+          referenciaCompraId: compraRef.id,
+        })
+      }
+
+      // Compra con items embebidos
       batch.set(compraRef, {
-        insumoId:     result.data.insumoId,
-        insumoNombre: insumo?.nombre ?? '',
-        cantidad:     result.data.cantidad,
-        unidad:       insumo?.unidad ?? '',
         fecha:        Timestamp.fromDate(new Date(result.data.fecha + 'T12:00:00')),
+        vencimiento:  vencimientoStr,
+        precioTotal:  precioTotal || null,
+        movimientoId: movimientoId,
         notas:        result.data.notas || '',
-        createdAt:    serverTimestamp(),
+        items:        result.data.items.map((it) => {
+          const ins = insumos.find((i) => i.id === it.insumoId)
+          return {
+            insumoId:    it.insumoId,
+            insumoNombre: ins?.nombre ?? '',
+            cantidad:    it.cantidad,
+            unidad:      ins?.unidad ?? '',
+            precioItem:  it.precioItem ?? null,
+          }
+        }),
+        createdAt: serverTimestamp(),
       })
 
-      // Incrementar stock
-      batch.update(doc(db, 'insumos', result.data.insumoId), {
-        stockActual: increment(result.data.cantidad),
-        updatedAt:   serverTimestamp(),
+      // Incrementar stock y costoUnitario por ítem
+      result.data.items.forEach((it) => {
+        const upd = { stockActual: increment(it.cantidad), updatedAt: serverTimestamp() }
+        if (it.precioItem) upd.costoUnitario = it.precioItem / it.cantidad
+        batch.update(doc(db, 'insumos', it.insumoId), upd)
       })
 
       await batch.commit()
@@ -151,13 +195,18 @@ export default function StockPage() {
 
   const abrirEditar = (insumo) => {
     setSelected(insumo)
-    setFormInsumo({ nombre: insumo.nombre, unidad: insumo.unidad, stockMinimo: insumo.stockMinimo ?? '' })
+    setFormInsumo({ nombre: insumo.nombre, unidad: insumo.unidad, stockMinimo: insumo.stockMinimo ?? '', stockActual: insumo.stockActual ?? 0 })
     setErrors({})
     setModal('editar')
   }
 
   const abrirCompra = (insumo = null) => {
-    setFormCompra({ insumoId: insumo?.id ?? '', cantidad: '', fecha: hoy(), notas: '' })
+    setFormCompra({
+      fecha:       hoy(),
+      vencimiento: hoy(),
+      notas:       '',
+      items:       [{ insumoId: insumo?.id ?? '', cantidad: '', precioItem: '' }],
+    })
     setErrors({})
     setModal('compra')
   }
@@ -229,6 +278,15 @@ export default function StockPage() {
                     {ins.stockMinimo > 0 && (
                       <span style={{ color: 'var(--text-secondary)' }}> · mín. {ins.stockMinimo} {ins.unidad}</span>
                     )}
+                    {ins.costoUnitario != null && (
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {' · '}
+                        <span style={{ color: 'var(--text-primary)' }}>
+                          ${ins.costoUnitario.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        /{ins.unidad}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="d-flex gap-1 flex-shrink-0">
@@ -286,6 +344,22 @@ export default function StockPage() {
                 </CAMPO>
               </div>
             </div>
+            {modal === 'editar' && (
+              <>
+                <hr style={{ borderColor: 'var(--border-color)', margin: '0.5rem 0 1rem' }} />
+                <CAMPO
+                  label="Stock actual (corrección manual)"
+                  error={errors.stockActual}
+                >
+                  <input type="number" className="form-control" style={inputStyle} min={0} step="0.01"
+                    value={formInsumo.stockActual}
+                    onChange={(e) => setFormInsumo((f) => ({ ...f, stockActual: e.target.value }))} />
+                  <p className="mt-1 mb-0" style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                    Usá este campo solo para corregir desfasajes. No crea ni elimina compras.
+                  </p>
+                </CAMPO>
+              </>
+            )}
             {errors._global && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors._global}</p>}
             <div className="d-flex gap-2">
               <button type="submit" className="btn btn-theme-primary" disabled={saving}>
@@ -298,50 +372,115 @@ export default function StockPage() {
       )}
 
       {/* ── Modal registrar compra ── */}
-      {modal === 'compra' && (
-        <Modal title="Registrar compra" onClose={closeModal}>
-          <form onSubmit={handleCompra}>
-            <CAMPO label="Insumo *" error={errors.insumoId}>
-              <select className="form-control" style={{ ...inputStyle, appearance: 'auto' }}
-                value={formCompra.insumoId}
-                onChange={(e) => setFormCompra((f) => ({ ...f, insumoId: e.target.value }))}>
-                <option value="">Seleccioná un insumo</option>
-                {insumos.map((i) => (
-                  <option key={i.id} value={i.id}>{i.nombre} ({i.stockActual ?? 0} {i.unidad})</option>
-                ))}
-              </select>
-            </CAMPO>
-            <div className="row g-2">
-              <div className="col-6">
-                <CAMPO label="Cantidad *" error={errors.cantidad}>
-                  <input type="number" className="form-control" style={inputStyle} min={0} step="0.01"
-                    value={formCompra.cantidad}
-                    onChange={(e) => setFormCompra((f) => ({ ...f, cantidad: e.target.value }))} />
-                </CAMPO>
+      {modal === 'compra' && (() => {
+        const totalCompra = formCompra.items.reduce((s, it) => s + (parseFloat(it.precioItem) || 0), 0)
+        return (
+          <Modal title="Registrar compra" onClose={closeModal} maxWidth={500}>
+            <form onSubmit={handleCompra}>
+
+              {/* Fechas */}
+              <div className="row g-2 mb-1">
+                <div className="col-6">
+                  <CAMPO label="Fecha de compra *" error={errors.fecha}>
+                    <input type="date" className="form-control" style={inputStyle}
+                      value={formCompra.fecha}
+                      onChange={(e) => setFormCompra((f) => ({ ...f, fecha: e.target.value }))} />
+                  </CAMPO>
+                </div>
+                <div className="col-6">
+                  <CAMPO label="Fecha de pago" error={errors.vencimiento}>
+                    <input type="date" className="form-control" style={inputStyle}
+                      value={formCompra.vencimiento}
+                      onChange={(e) => setFormCompra((f) => ({ ...f, vencimiento: e.target.value }))} />
+                  </CAMPO>
+                </div>
               </div>
-              <div className="col-6">
-                <CAMPO label="Fecha *" error={errors.fecha}>
-                  <input type="date" className="form-control" style={inputStyle}
-                    value={formCompra.fecha}
-                    onChange={(e) => setFormCompra((f) => ({ ...f, fecha: e.target.value }))} />
-                </CAMPO>
-              </div>
-            </div>
-            <CAMPO label="Notas" error={errors.notas}>
-              <input className="form-control" style={inputStyle} placeholder="Opcional"
-                value={formCompra.notas}
-                onChange={(e) => setFormCompra((f) => ({ ...f, notas: e.target.value }))} />
-            </CAMPO>
-            {errors._global && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors._global}</p>}
-            <div className="d-flex gap-2">
-              <button type="submit" className="btn btn-theme-primary" disabled={saving}>
-                {saving ? 'Guardando...' : 'Confirmar compra'}
+
+              {/* Ítems */}
+              <p className="small mb-2 fw-semibold" style={{ color: 'var(--text-secondary)' }}>Productos</p>
+              {formCompra.items.map((item, idx) => (
+                <div key={idx} className="mb-3 p-2 rounded-2" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                  <div className="mb-2">
+                    <select
+                      className="form-control"
+                      style={{ ...inputStyle, appearance: 'auto', background: 'var(--bg-primary)' }}
+                      value={item.insumoId}
+                      onChange={(e) => updateItem(idx, 'insumoId', e.target.value)}
+                    >
+                      <option value="">Seleccioná un insumo</option>
+                      {insumos.map((i) => (
+                        <option key={i.id} value={i.id}>{i.nombre} (stock: {i.stockActual ?? 0} {i.unidad})</option>
+                      ))}
+                    </select>
+                    {errors[`items.${idx}.insumoId`] && (
+                      <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.insumoId`]}</p>
+                    )}
+                  </div>
+                  <div className="d-flex gap-2 align-items-start">
+                    <div className="flex-grow-1">
+                      <input type="number" className="form-control" style={{ ...inputStyle, background: 'var(--bg-primary)' }}
+                        placeholder="Cantidad *" min={0} step="0.01"
+                        value={item.cantidad}
+                        onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} />
+                      {errors[`items.${idx}.cantidad`] && (
+                        <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.cantidad`]}</p>
+                      )}
+                    </div>
+                    <div className="flex-grow-1">
+                      <input type="number" className="form-control" style={{ ...inputStyle, background: 'var(--bg-primary)' }}
+                        placeholder="Precio subtotal" min={0} step="0.01"
+                        value={item.precioItem}
+                        onChange={(e) => updateItem(idx, 'precioItem', e.target.value)} />
+                      {errors[`items.${idx}.precioItem`] && (
+                        <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.precioItem`]}</p>
+                      )}
+                    </div>
+                    {formCompra.items.length > 1 && (
+                      <button type="button" onClick={() => removeItem(idx)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', fontSize: '1.1rem', lineHeight: 1, padding: '6px 4px', flexShrink: 0 }}>
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <button type="button" className="btn btn-sm btn-theme-secondary w-100 mb-3"
+                onClick={addItem}>
+                + Agregar producto
               </button>
-              <button type="button" className="btn btn-theme-secondary" onClick={closeModal}>Cancelar</button>
-            </div>
-          </form>
-        </Modal>
-      )}
+
+              {/* Total */}
+              {totalCompra > 0 && (
+                <div className="p-2 rounded-2 mb-3 d-flex justify-content-between align-items-center"
+                  style={{ background: 'rgba(var(--primary-rgb),0.07)', border: '1px solid var(--border-color)' }}>
+                  <span className="small" style={{ color: 'var(--text-secondary)' }}>
+                    Total · egreso pendiente en Finanzas
+                  </span>
+                  <strong style={{ color: 'var(--text-primary)' }}>
+                    ${totalCompra.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </strong>
+                </div>
+              )}
+
+              <CAMPO label="Notas" error={errors.notas}>
+                <input className="form-control" style={inputStyle} placeholder="Opcional"
+                  value={formCompra.notas}
+                  onChange={(e) => setFormCompra((f) => ({ ...f, notas: e.target.value }))} />
+              </CAMPO>
+
+              {errors['items'] && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors['items']}</p>}
+              {errors._global && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors._global}</p>}
+              <div className="d-flex gap-2">
+                <button type="submit" className="btn btn-theme-primary" disabled={saving}>
+                  {saving ? 'Guardando...' : 'Confirmar compra'}
+                </button>
+                <button type="button" className="btn btn-theme-secondary" onClick={closeModal}>Cancelar</button>
+              </div>
+            </form>
+          </Modal>
+        )
+      })()}
     </div>
   )
 }

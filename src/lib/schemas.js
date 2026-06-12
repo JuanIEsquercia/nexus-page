@@ -6,11 +6,20 @@ export const insumoSchema = z.object({
   stockMinimo: z.coerce.number().min(0, 'Debe ser ≥ 0'),
 })
 
+export const compraItemSchema = z.object({
+  insumoId:   z.string().min(1, 'Requerido'),
+  cantidad:   z.coerce.number().positive('Debe ser > 0'),
+  precioItem: z.preprocess(
+    (v) => (v === '' || v == null ? undefined : Number(v)),
+    z.number().positive('Debe ser > 0').optional()
+  ),
+})
+
 export const compraSchema = z.object({
-  insumoId:  z.string().min(1, 'Seleccioná un insumo'),
-  cantidad:  z.coerce.number().positive('Debe ser mayor a 0'),
-  fecha:     z.string().min(1, 'Requerido'),
-  notas:     z.string().optional(),
+  fecha:       z.string().min(1, 'Requerido'),
+  vencimiento: z.string().optional(),
+  notas:       z.string().optional(),
+  items:       z.array(compraItemSchema).min(1, 'Agregá al menos un producto'),
 })
 
 export const visitaSchema = z.object({
