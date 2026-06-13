@@ -21,7 +21,14 @@ const CATEGORIAS = {
   egreso:  ['Insumos', 'Alquiler', 'Mantenimiento', 'Sueldo', 'Servicios', 'Impuestos', 'Otro egreso'],
 }
 
-const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', vencimiento: '', notas: '', cuentaPago: '', socioPago: '', origenPago: 'cuenta' }
+const FORM_INICIAL = { tipo: 'ingreso', estado: 'confirmado', descripcion: '', categoria: '', monto: '', vencimiento: '', notas: '', cuentaPago: '', socioPago: '', origenPago: 'cuenta', esRecurrente: false, cuotas: 2, periodicidad: 'mensual' }
+
+const PERIODICIDADES = [
+  { value: 'semanal',   label: 'Semanal (cada 7 días)' },
+  { value: 'quincenal', label: 'Quincenal (cada 15 días)' },
+  { value: 'mensual',   label: 'Mensual' },
+  { value: 'bimestral', label: 'Bimestral (cada 2 meses)' },
+]
 
 // ── Utilidades ────────────────────────────────────────────
 
@@ -45,6 +52,17 @@ function formatFecha(str) {
 
 function hoy() {
   return new Date().toISOString().split('T')[0]
+}
+
+function calcularVencimientoCuota(fechaBase, periodicidad, cuotaIndex) {
+  if (cuotaIndex === 0) return fechaBase
+  const [y, m, d] = fechaBase.split('-').map(Number)
+  const fecha = new Date(y, m - 1, d)
+  if (periodicidad === 'semanal')   fecha.setDate(fecha.getDate() + 7 * cuotaIndex)
+  if (periodicidad === 'quincenal') fecha.setDate(fecha.getDate() + 15 * cuotaIndex)
+  if (periodicidad === 'mensual')   fecha.setMonth(fecha.getMonth() + cuotaIndex)
+  if (periodicidad === 'bimestral') fecha.setMonth(fecha.getMonth() + 2 * cuotaIndex)
+  return fecha.toISOString().split('T')[0]
 }
 
 function labelMes(periodo) {
@@ -100,6 +118,19 @@ function MovimientoRow({ mov, onConfirm, onDelete, onEdit, extraLabel, pagoLabel
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{mov.categoria}</span>
           <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{formatFecha(mov.vencimiento)}</span>
+          {mov.serieId && (
+            <>
+              <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
+              <span
+                style={{
+                  color: 'var(--primary-color)', fontSize: '0.64rem', fontWeight: 600,
+                  background: 'rgba(14,165,233,0.1)', borderRadius: '0.25rem', padding: '0.05rem 0.35rem',
+                }}
+              >
+                Cuota {mov.cuotaNumero}/{mov.totalCuotas}
+              </span>
+            </>
+          )}
           {extraLabel && (
             <>
               <span style={{ color: 'var(--border-color)', fontSize: '0.7rem' }}>·</span>
@@ -396,7 +427,8 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData, cuentas
           categoria: initialData.categoria, monto: String(initialData.monto),
           vencimiento: initialData.vencimiento, notas: initialData.notas ?? '',
           cuentaPago: initialData.cuentaPago ?? '', socioPago: initialData.socioPago ?? '',
-          origenPago: initialData.socioPago ? 'socio' : 'cuenta' }
+          origenPago: initialData.socioPago ? 'socio' : 'cuenta',
+          esRecurrente: false, cuotas: 2, periodicidad: 'mensual' }
       : { ...FORM_INICIAL, vencimiento: hoy() }
   )
 
@@ -628,7 +660,7 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData, cuentas
           </div>
 
           {/* Notas */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label style={labelStyle}>Notas (opcional)</label>
             <textarea
               value={form.notas} onChange={e => set('notas', e.target.value)}
@@ -636,6 +668,63 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData, cuentas
               style={{ ...inputStyle, resize: 'none' }}
             />
           </div>
+
+          {/* Recurrencia — al crear o al editar un movimiento que aún no es parte de una serie */}
+          {(!initialData || !initialData.serieId) && (
+            <div className="mb-4">
+              <div
+                className="d-flex align-items-center justify-content-between"
+                style={{ cursor: 'pointer' }}
+                onClick={() => set('esRecurrente', !form.esRecurrente)}
+              >
+                <label style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>
+                  ¿Pago recurrente / en cuotas?
+                </label>
+                <div
+                  style={{
+                    width: 38, height: 22, borderRadius: '2rem',
+                    background: form.esRecurrente ? 'var(--primary-color)' : 'var(--border-color)',
+                    cursor: 'pointer', transition: 'all 0.2s', position: 'relative', flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute', top: 3,
+                      left: form.esRecurrente ? 19 : 3,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: '#fff', transition: 'all 0.2s',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {form.esRecurrente && (
+                <div className="d-flex gap-2 mt-3">
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Periodicidad</label>
+                    <select
+                      value={form.periodicidad}
+                      onChange={e => set('periodicidad', e.target.value)}
+                      style={inputStyle}
+                    >
+                      {PERIODICIDADES.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Cantidad de cuotas</label>
+                    <input
+                      type="number" min={2} max={24}
+                      value={form.cuotas}
+                      onChange={e => set('cuotas', Math.max(2, Math.min(24, parseInt(e.target.value) || 2)))}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             type="submit" disabled={saving}
@@ -647,7 +736,14 @@ function MovimientoModal({ saving, errors, onClose, onSave, initialData, cuentas
             }}
           >
             <BsCheckCircleFill size={16} />
-            {saving ? 'Guardando...' : initialData ? 'Guardar cambios' : 'Registrar movimiento'}
+            {saving
+              ? 'Guardando...'
+              : form.esRecurrente
+                ? `${initialData ? 'Guardar y crear' : 'Crear'} ${form.cuotas} cuotas`
+                : initialData
+                  ? 'Guardar cambios'
+                  : 'Registrar movimiento'
+            }
           </button>
         </form>
       </div>
@@ -800,27 +896,44 @@ export default function FinanzasPage() {
     setErrors({})
     setSaving(true)
 
-    const periodo = periodoDeVencimiento(resultado.data.vencimiento)
-    const esConf  = resultado.data.estado === 'confirmado'
-    const porSocio = esConf && resultado.data.tipo === 'egreso' && formData.origenPago === 'socio'
+    const esConf     = resultado.data.estado === 'confirmado'
+    const porSocio   = esConf && resultado.data.tipo === 'egreso' && formData.origenPago === 'socio'
     const cuentaPago = esConf && !porSocio ? (formData.cuentaPago || null) : null
-    const socioPago  = porSocio ? (formData.socioPago  || null) : null
-    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', creadoEl: serverTimestamp(), cuentaPago, socioPago }
+    const socioPago  = porSocio ? (formData.socioPago || null) : null
+
+    const esRecurrente = !!formData.esRecurrente
+    const totalCuotas  = esRecurrente ? Math.max(2, Math.min(24, parseInt(formData.cuotas) || 2)) : 1
+    const periodicidad = formData.periodicidad ?? 'mensual'
+    const serieId      = esRecurrente
+      ? `serie_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+      : null
 
     try {
-      const ref = await addDoc(collection(db, 'movimientos'), payload)
-      const nuevo = { id: ref.id, ...payload }
+      const nuevos = []
+      for (let i = 0; i < totalCuotas; i++) {
+        const venc    = calcularVencimientoCuota(resultado.data.vencimiento, periodicidad, i)
+        const periodo = periodoDeVencimiento(venc)
+        const payload = {
+          ...resultado.data,
+          vencimiento: venc,
+          periodo,
+          notas: formData.notas ?? '',
+          creadoEl: serverTimestamp(),
+          cuentaPago,
+          socioPago,
+          ...(serieId ? { serieId, cuotaNumero: i + 1, totalCuotas } : {}),
+        }
+        const ref = await addDoc(collection(db, 'movimientos'), payload)
+        nuevos.push({ id: ref.id, ...payload })
+      }
 
       const mesStr  = String(mes + 1).padStart(2, '0')
       const prefijo = `${anio}-${mesStr}`
-      const enMesActual = (nuevo.vencimiento ?? '').startsWith(prefijo)
+      const enMes     = nuevos.filter(n => (n.vencimiento ?? '').startsWith(prefijo))
+      const pendOtros = nuevos.filter(n => !(n.vencimiento ?? '').startsWith(prefijo) && n.estado === 'pendiente')
 
-      if (enMesActual) {
-        setMovs(ms => [...ms, nuevo])
-      }
-      if (payload.estado === 'pendiente' && !enMesActual) {
-        setTodosPend(ms => [...ms, nuevo])
-      }
+      if (enMes.length > 0)     setMovs(ms => [...ms, ...enMes])
+      if (pendOtros.length > 0) setTodosPend(ms => [...ms, ...pendOtros])
 
       setModal(null)
     } catch (e) {
@@ -845,17 +958,64 @@ export default function FinanzasPage() {
     }
     setErrors({})
     setSaving(true)
-    const periodo  = periodoDeVencimiento(resultado.data.vencimiento)
-    const esConf2  = resultado.data.estado === 'confirmado'
+    const esConf2   = resultado.data.estado === 'confirmado'
     const porSocio2 = esConf2 && resultado.data.tipo === 'egreso' && formData.origenPago === 'socio'
     const cuentaPago2 = esConf2 && !porSocio2 ? (formData.cuentaPago || null) : null
-    const socioPago2  = porSocio2 ? (formData.socioPago  || null) : null
-    const payload = { ...resultado.data, periodo, notas: formData.notas ?? '', cuentaPago: cuentaPago2, socioPago: socioPago2 }
+    const socioPago2  = porSocio2 ? (formData.socioPago || null) : null
+
+    const esRecurrente2 = !!formData.esRecurrente
+    const totalCuotas2  = esRecurrente2 ? Math.max(2, Math.min(24, parseInt(formData.cuotas) || 2)) : 1
+    const periodicidad2 = formData.periodicidad ?? 'mensual'
+    const serieId2      = esRecurrente2
+      ? `serie_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+      : null
+
     try {
-      await updateDoc(doc(db, 'movimientos', id), payload)
-      const updated = { id, ...payload }
+      const mesStr  = String(mes + 1).padStart(2, '0')
+      const prefijo = `${anio}-${mesStr}`
+
+      // Cuota 1: actualizar el documento existente
+      const venc1   = resultado.data.vencimiento
+      const periodo1 = periodoDeVencimiento(venc1)
+      const payload1 = {
+        ...resultado.data,
+        vencimiento: venc1,
+        periodo: periodo1,
+        notas: formData.notas ?? '',
+        cuentaPago: cuentaPago2,
+        socioPago: socioPago2,
+        ...(serieId2 ? { serieId: serieId2, cuotaNumero: 1, totalCuotas: totalCuotas2 } : {}),
+      }
+      await updateDoc(doc(db, 'movimientos', id), payload1)
+      const updated = { id, ...payload1 }
       setMovs(ms => ms.map(m => m.id === id ? updated : m))
       setTodosPend(ms => ms.map(m => m.id === id ? updated : m))
+
+      // Cuotas 2..N: crear nuevos documentos
+      if (esRecurrente2) {
+        const nuevos = []
+        for (let i = 1; i < totalCuotas2; i++) {
+          const venc    = calcularVencimientoCuota(venc1, periodicidad2, i)
+          const periodo = periodoDeVencimiento(venc)
+          const payload = {
+            ...resultado.data,
+            vencimiento: venc,
+            periodo,
+            notas: formData.notas ?? '',
+            creadoEl: serverTimestamp(),
+            cuentaPago: cuentaPago2,
+            socioPago: socioPago2,
+            serieId: serieId2, cuotaNumero: i + 1, totalCuotas: totalCuotas2,
+          }
+          const ref = await addDoc(collection(db, 'movimientos'), payload)
+          nuevos.push({ id: ref.id, ...payload })
+        }
+        const enMes     = nuevos.filter(n => (n.vencimiento ?? '').startsWith(prefijo))
+        const pendOtros = nuevos.filter(n => !(n.vencimiento ?? '').startsWith(prefijo) && n.estado === 'pendiente')
+        if (enMes.length > 0)     setMovs(ms => [...ms, ...enMes])
+        if (pendOtros.length > 0) setTodosPend(ms => [...ms, ...pendOtros])
+      }
+
       setModal(null)
     } catch (e) {
       setErrors({ _general: e.message })
