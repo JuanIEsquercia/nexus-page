@@ -911,16 +911,19 @@ export default function FinanzasPage() {
     try {
       const nuevos = []
       for (let i = 0; i < totalCuotas; i++) {
+        const esPrimeraCuota = i === 0
         const venc    = calcularVencimientoCuota(resultado.data.vencimiento, periodicidad, i)
         const periodo = periodoDeVencimiento(venc)
         const payload = {
           ...resultado.data,
+          // Cuotas 2..N siempre pendiente (aún no se pagaron)
+          ...(serieId && !esPrimeraCuota ? { estado: 'pendiente' } : {}),
           vencimiento: venc,
           periodo,
           notas: formData.notas ?? '',
           creadoEl: serverTimestamp(),
-          cuentaPago,
-          socioPago,
+          cuentaPago: esPrimeraCuota ? cuentaPago : null,
+          socioPago:  esPrimeraCuota ? socioPago  : null,
           ...(serieId ? { serieId, cuotaNumero: i + 1, totalCuotas } : {}),
         }
         const ref = await addDoc(collection(db, 'movimientos'), payload)
@@ -999,12 +1002,13 @@ export default function FinanzasPage() {
           const periodo = periodoDeVencimiento(venc)
           const payload = {
             ...resultado.data,
+            estado: 'pendiente', // cuotas 2..N siempre pendiente
             vencimiento: venc,
             periodo,
             notas: formData.notas ?? '',
             creadoEl: serverTimestamp(),
-            cuentaPago: cuentaPago2,
-            socioPago: socioPago2,
+            cuentaPago: null,
+            socioPago: null,
             serieId: serieId2, cuotaNumero: i + 1, totalCuotas: totalCuotas2,
           }
           const ref = await addDoc(collection(db, 'movimientos'), payload)
