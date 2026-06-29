@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   doc, getDoc, collection, getDocs, orderBy, query,
@@ -43,6 +43,8 @@ export default function VisitaEditPage() {
   const [catalogoInsumos, setCatalogoInsumos] = useState([])
   const [visitaAnterior, setVisitaAnterior]   = useState(null)
   const [esUltimaVisita, setEsUltimaVisita]   = useState(false)
+  const [fechaOriginalTs, setFechaOriginalTs] = useState(null)
+  const [esVisitaRemota, setEsVisitaRemota]   = useState(false)
 
   // Datos originales (para restaurar stock al guardar)
   const [insumosOriginales, setInsumosOriginales] = useState([])
@@ -76,6 +78,10 @@ export default function VisitaEditPage() {
       if (!visitaSnap.exists()) { setLoading(false); return }
 
       const visita = { id: visitaSnap.id, ...visitaSnap.data() }
+
+      // Guardar fecha original para detectar si es la última visita al guardar
+      setFechaOriginalTs(visita.fecha ?? null)
+      setEsVisitaRemota(visita.tecnico === 'remoto')
 
       // Fecha
       const fechaStr = visita.fecha?.toDate
@@ -136,12 +142,19 @@ export default function VisitaEditPage() {
           return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)
         })
       const idx = todasVisitas.findIndex((v) => v.id === visitaId)
-      setVisitaAnterior(todasVisitas[idx + 1] ?? null) // la siguiente en orden desc = la anterior cronológicamente
-      setEsUltimaVisita(idx === 0) // primera en desc = la más reciente
+      setVisitaAnterior(idx >= 0 ? (todasVisitas[idx + 1] ?? null) : null)
+      setEsUltimaVisita(idx === 0)
 
       setLoading(false)
     })
   }, [visitaId, clienteId, maquinaId])
+
+  // contadorTotal siempre = suma de los expendios cargados (así el campo refleja los cambios)
+  const contadorTotalEfectivo = useMemo(() => {
+    if (bebidas.length === 0) return contadorTotal // todavía cargando
+    const suma = bebidas.reduce((acc, b) => acc + (parseInt(expendios[b.id] ?? '', 10) || 0), 0)
+    return String(suma)
+  }, [bebidas, expendios, contadorTotal])
 
   // ── Insumos helpers ──────────────────────────────────
   const addInsumo    = () => setInsumos((p) => [...p, { insumoId: '', cantidad: '' }])
@@ -152,7 +165,7 @@ export default function VisitaEditPage() {
   // ── Submit ────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const result = visitaSchema.safeParse({ fecha, contadorTotal, observaciones })
+    const result = visitaSchema.safeParse({ fecha, contadorTotal: contadorTotalEfectivo, observaciones })
     if (!result.success) {
       const errs = {}
       result.error.issues.forEach((err) => { errs[err.path[0]] = err.message })
@@ -238,7 +251,14 @@ export default function VisitaEditPage() {
       })
 
       // 5 — Si es la visita más reciente, actualizar máquina
-      if (esUltimaVisita) {
+      const maquinaUltimaTs = maquina?.ultimaVisita
+      const debeActualizarMaquina = esUltimaVisita || (
+        fechaOriginalTs != null && (
+          maquinaUltimaTs == null ||
+          fechaOriginalTs.seconds >= maquinaUltimaTs.seconds
+        )
+      )
+      if (debeActualizarMaquina && maquina != null) {
         batch.update(doc(db, 'clientes', clienteId, 'maquinas', maquinaId), {
           contadorActual: contadorNum,
           ultimaVisita:   Timestamp.fromDate(fechaDate),
@@ -292,11 +312,14 @@ export default function VisitaEditPage() {
               <label className="form-label small mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Contador total *
                 {visitaAnterior && <span className="ms-1" style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(anterior: {visitaAnterior.contadorTotal})</span>}
+                {bebidas.length > 0 && <span className="ms-1" style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(calculado)</span>}
               </label>
               <input
                 type="number" className="form-control" style={inputStyle}
-                min={0} value={contadorTotal}
-                onChange={(e) => setContadorTotal(e.target.value)}
+                min={0}
+                value={contadorTotalEfectivo}
+                onChange={(e) => bebidas.length === 0 && setContadorTotal(e.target.value)}
+                readOnly={bebidas.length > 0}
               />
               {errors.contadorTotal && <p className="mt-1 mb-0 small" style={{ color: 'var(--danger-color)' }}>{errors.contadorTotal}</p>}
             </div>
@@ -313,7 +336,10 @@ export default function VisitaEditPage() {
 
         {/* Contadores por bebida */}
         {bebidas.length > 0 && (
-          <SECTION title="Contadores por bebida" subtitle="Contador acumulado que muestra la máquina.">
+          <SECTION
+            title="Contadores por bebida"
+            subtitle={esVisitaRemota ? 'Tiradas del período registradas por el agente.' : 'Contador acumulado que muestra la máquina.'}
+          >
             <div className="d-flex flex-column gap-2">
               {bebidas.map((bebida) => (
                 <div key={bebida.id} className="d-flex align-items-center gap-2">
