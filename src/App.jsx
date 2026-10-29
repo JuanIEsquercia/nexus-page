@@ -45,6 +45,7 @@ import ModeloListPage from './pages/admin/ModeloListPage'
 import ModeloFormPage from './pages/admin/ModeloFormPage'
 import FinanzasPage from './pages/admin/FinanzasPage'
 import TesoreríaPage from './pages/admin/TesoreríaPage'
+import KitsPage from './pages/admin/KitsPage'
 
 import { Helmet } from 'react-helmet-async'
 
@@ -127,6 +128,7 @@ function App() {
               <Route path="visitas/nueva/:maquinaId" element={<VisitaFormPage />} />
               <Route path="visitas/:visitaId/editar" element={<VisitaEditPage />} />
               <Route path="stock" element={<StockPage />} />
+              <Route path="kits" element={<KitsPage />} />
               <Route path="balance" element={<BalancePage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="incidencias" element={<IncidenciasPage />} />
