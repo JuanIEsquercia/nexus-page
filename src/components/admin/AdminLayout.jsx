@@ -16,6 +16,7 @@ import {
   BsCpu,
   BsCashStack,
   BsWallet2,
+  BsBoxSeamFill,
 } from 'react-icons/bs'
 
 // Los primeros 4 aparecen también en el bottom nav mobile
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { to: '/admin',              label: 'Dashboard',   icon: BsSpeedometer2,          exact: true },
   { to: '/admin/clientes',     label: 'Clientes',    icon: BsPeopleFill },
   { to: '/admin/stock',        label: 'Stock',       icon: BsBoxSeam },
+  { to: '/admin/kits',         label: 'Kits',        icon: BsBoxSeamFill },
   { to: '/admin/finanzas',     label: 'Finanzas',    icon: BsCashStack },
   { to: '/admin/tesoreria',   label: 'Tesorería',   icon: BsWallet2 },
   { to: '/admin/balance',      label: 'Balance',     icon: BsGraphUp },
@@ -45,7 +47,7 @@ export default function AdminLayout() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
 
-      {/* ── Sidebar desktop (lg+) ─────────────────────── */}
+      {/* ── Sidebar desktop (lg+) ──────────────────────── */}
       <aside
         className="d-none d-lg-flex flex-column"
         style={{
@@ -146,7 +148,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* ── Contenido principal ───────────────────────── */}
+      {/* ── Contenido principal ─────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
         {/* Topbar mobile */}
@@ -186,7 +188,7 @@ export default function AdminLayout() {
           <Outlet />
         </main>
 
-        {/* ── Bottom nav mobile ─────────────────────── */}
+        {/* ── Bottom nav mobile ──────────────────────── */}
         <nav
           className="d-flex d-lg-none align-items-center"
           style={{
