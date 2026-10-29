@@ -31,7 +31,6 @@ import ClientesPage from './pages/admin/ClientesPage'
 import ClienteFormPage from './pages/admin/ClienteFormPage'
 import ClienteDetallePage from './pages/admin/ClienteDetallePage'
 import StockPage from './pages/admin/StockPage'
-import BalancePage from './pages/admin/BalancePage'
 import MaquinaFormPage from './pages/admin/MaquinaFormPage'
 import MaquinaDetallePage from './pages/admin/MaquinaDetallePage'
 import VisitaFormPage from './pages/admin/VisitaFormPage'
@@ -39,7 +38,6 @@ import VisitaEditPage from './pages/admin/VisitaEditPage'
 import DocumentosPage from './pages/admin/DocumentosPage'
 import PresupuestoFormPage from './pages/admin/PresupuestoFormPage'
 import RemitoFormPage from './pages/admin/RemitoFormPage'
-import AnalyticsPage from './pages/admin/AnalyticsPage'
 import IncidenciasPage from './pages/admin/IncidenciasPage'
 import ModeloListPage from './pages/admin/ModeloListPage'
 import ModeloFormPage from './pages/admin/ModeloFormPage'
@@ -129,8 +127,6 @@ function App() {
               <Route path="visitas/:visitaId/editar" element={<VisitaEditPage />} />
               <Route path="stock" element={<StockPage />} />
               <Route path="kits" element={<KitsPage />} />
-              <Route path="balance" element={<BalancePage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="incidencias" element={<IncidenciasPage />} />
               <Route path="modelos" element={<ModeloListPage />} />
               <Route path="modelos/nuevo" element={<ModeloFormPage />} />
