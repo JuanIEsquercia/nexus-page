@@ -1,171 +1,194 @@
 import { useEffect, useState, useMemo } from 'react'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, updateDoc, orderBy, query, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/firebase'
-import { BsBoxSeam, BsPeopleFill, BsCalendar3 } from 'react-icons/bs'
+import { BsPlus, BsBoxSeam, BsPeopleFill, BsCashCoin } from 'react-icons/bs'
 
-// Receta estándar por máquina / mes
-const KIT_RECETA = [
-  { key: 'cafe',      label: 'Café',         cantidad: 1,   unidad: 'bolsa' },
-  { key: 'chocolate', label: 'Chocolate',    cantidad: 2,   unidad: 'bolsas' },
-  { key: 'leche',     label: 'Leches',       cantidad: 4,   unidad: 'bolsas' },
-  { key: 'vasos',     label: 'Vasos',        cantidad: 350, unidad: 'unidades' },
-  { key: 'revolvedores', label: 'Revolvedores', cantidad: 350, unidad: 'unidades' },
+const KIT_BASE = [
+  { key: 'cafe',         label: 'Café',         cantidad: 1 },
+  { key: 'chocolate',    label: 'Chocolate',    cantidad: 2 },
+  { key: 'leche',        label: 'Leches',       cantidad: 4 },
+  { key: 'vasos',        label: 'Vasos',        cantidad: 350 },
+  { key: 'revolvedores', label: 'Revolvedores', cantidad: 350 },
 ]
 
-function getPeriodoActual(diaCobro) {
-  const hoy = new Date()
-  const dia = Math.min(Math.max(Number(diaCobro) || 1, 1), 28) // evita problemas de meses cortos
-  let inicio = new Date(hoy.getFullYear(), hoy.getMonth(), dia)
-  if (hoy.getDate() < dia) {
-    inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, dia)
-  }
-  const fin = new Date(inicio)
-  fin.setMonth(fin.getMonth() + 1)
-  fin.setDate(fin.getDate() - 1)
-  return { inicio, fin }
-}
-
-function formatRango(inicio, fin) {
-  const opts = { day: '2-digit', month: 'short' }
-  return `${inicio.toLocaleDateString('es-AR', opts)} – ${fin.toLocaleDateString('es-AR', opts)}`
+function formatMonto(n) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0)
 }
 
 export default function KitsPage() {
   const [clientes, setClientes] = useState([])
   const [insumos, setInsumos]   = useState([])
+  const [kits, setKits]         = useState([])
   const [loading, setLoading]   = useState(true)
+  const [modal, setModal]       = useState(null) // { clienteId }
+  const [saving, setSaving]     = useState(false)
 
-  useEffect(() => {
-    Promise.all([
+  const cargar = async () => {
+    const [cliSnap, insSnap] = await Promise.all([
       getDocs(query(collection(db, 'clientes'), orderBy('razonSocial'))),
       getDocs(query(collection(db, 'insumos'), orderBy('nombre'))),
-    ]).then(async ([cliSnap, insSnap]) => {
-      const clis = cliSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      const conMaquinas = await Promise.all(
-        clis.map(async (c) => {
-          const maqSnap = await getDocs(collection(db, 'clientes', c.id, 'maquinas'))
-          return { ...c, cantMaquinas: maqSnap.size }
-        })
-      )
-      setClientes(conMaquinas.filter((c) => c.cantMaquinas > 0))
-      setInsumos(insSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
-      setLoading(false)
-    })
-  }, [])
-
-  const datos = useMemo(() => {
-    const porCliente = clientes.map((c) => {
-      const periodo = getPeriodoActual(c.diaCobro)
-      const kits = c.cantMaquinas
-      const items = KIT_RECETA.map((r) => ({
-        ...r,
-        total: r.cantidad * kits,
-      }))
-      return { ...c, periodo, kits, items }
-    })
-
-    const totales = KIT_RECETA.map((r) => ({
-      ...r,
-      total: porCliente.reduce((s, c) => s + c.kits * r.cantidad, 0),
+    ])
+    const clis = cliSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    const conMaq = await Promise.all(clis.map(async (c) => {
+      const maqSnap = await getDocs(collection(db, 'clientes', c.id, 'maquinas'))
+      return { ...c, cantMaquinas: maqSnap.size }
     }))
+    setClientes(conMaq)
+    setInsumos(insSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
 
-    return { porCliente, totales }
-  }, [clientes])
+    // Cargar kits activos de todos los clientes
+    const allKits = []
+    for (const c of conMaq) {
+      const kitSnap = await getDocs(collection(db, 'clientes', c.id, 'kitsAsignados'))
+      kitSnap.docs.forEach((d) => allKits.push({ id: d.id, clienteId: c.id, clienteNombre: c.razonSocial, ...d.data() }))
+    }
+    setKits(allKits)
+    setLoading(false)
+  }
 
-  // Matching simple de stock por nombre (aproximado)
-  const stockMap = useMemo(() => {
+  useEffect(() => { cargar() }, [])
+
+  const insumosPorKey = useMemo(() => {
     const map = {}
     insumos.forEach((i) => {
       const n = (i.nombre || '').toLowerCase()
-      if (n.includes('café') || n.includes('cafe')) map.cafe = (map.cafe || 0) + (i.stockActual || 0)
-      if (n.includes('chocolate')) map.chocolate = (map.chocolate || 0) + (i.stockActual || 0)
-      if (n.includes('leche')) map.leche = (map.leche || 0) + (i.stockActual || 0)
-      if (n.includes('vaso')) map.vasos = (map.vasos || 0) + (i.stockActual || 0)
-      if (n.includes('revolvedor') || n.includes('palito') || n.includes('mezclador')) map.revolvedores = (map.revolvedores || 0) + (i.stockActual || 0)
+      if (n.includes('café') || n.includes('cafe')) map.cafe = i
+      if (n.includes('chocolate')) map.chocolate = i
+      if (n.includes('leche')) map.leche = i
+      if (n.includes('vaso')) map.vasos = i
+      if (n.includes('revolvedor') || n.includes('palito') || n.includes('mezclador')) map.revolvedores = i
     })
     return map
   }, [insumos])
 
-  if (loading) return (
-    <div className="text-center py-5">
-      <div className="spinner-border spinner-border-sm" style={{ color: 'var(--primary-color)' }} />
-      <p className="mt-2 small" style={{ color: 'var(--text-secondary)' }}>Cargando kits...</p>
-    </div>
-  )
+  const abrirAsignar = (clienteId) => setModal({ clienteId })
+
+  const asignarKit = async (clienteId) => {
+    const cliente = clientes.find((c) => c.id === clienteId)
+    if (!cliente) return
+    setSaving(true)
+    try {
+      const kitsCount = cliente.cantMaquinas || 1
+      const items = KIT_BASE.map((base) => {
+        const ins = insumosPorKey[base.key]
+        const cant = base.cantidad * kitsCount
+        return {
+          insumoId: ins?.id ?? null,
+          nombre: ins?.nombre ?? base.label,
+          unidad: ins?.unidad ?? '',
+          cantidadAsignada: cant,
+          cantidadConsumida: 0,
+          costoUnitario: ins?.costoUnitario ?? 0,
+        }
+      })
+
+      await addDoc(collection(db, 'clientes', clienteId, 'kitsAsignados'), {
+        periodo: new Date().toISOString().slice(0, 7),
+        modoServicio: cliente.modoServicio ?? 'presencial',
+        items,
+        estado: 'activo',
+        createdAt: serverTimestamp(),
+      })
+      setModal(null)
+      cargar()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const registrarConsumo = async (kit, itemIndex, cantidad) => {
+    const newItems = kit.items.map((it, i) => i === itemIndex ? { ...it, cantidadConsumida: (it.cantidadConsumida || 0) + cantidad } : it)
+    await updateDoc(doc(db, 'clientes', kit.clienteId, 'kitsAsignados', kit.id), { items: newItems })
+    cargar()
+  }
+
+  if (loading) return <div className="text-center py-5"><div className="spinner-border spinner-border-sm" /></div>
+
+  const kitsActivos = kits.filter((k) => k.estado === 'activo')
 
   return (
     <div>
-      <div className="mb-4">
-        <h5 className="mb-1" style={{ color: 'var(--text-primary)' }}>Kits del mes</h5>
-        <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>
-          Insumos a preparar según período de facturación y cantidad de máquinas
-        </p>
+      <div className="d-flex align-items-center justify-content-between mb-4">
+        <div>
+          <h5 className="mb-1" style={{ color: 'var(--text-primary)' }}>Kits asignados</h5>
+          <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>Asigná kits por cliente. El remanente no es costo: mejora el margen.</p>
+        </div>
       </div>
 
-      {/* Totales globales */}
-      <div className="rounded-3 p-3 mb-4" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <p className="small fw-semibold mb-2" style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Total a tener este mes
-        </p>
-        <div className="d-flex flex-wrap gap-3">
-          {datos.totales.map((t) => {
-            const stock = stockMap[t.key] ?? 0
-            const falta = Math.max(0, t.total - stock)
+      {/* Clientes sin kit activo */}
+      <div className="mb-4">
+        <p className="small fw-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Asignar nuevo kit</p>
+        <div className="d-flex flex-wrap gap-2">
+          {clientes.filter((c) => c.cantMaquinas > 0).map((c) => (
+            <button key={c.id} className="btn btn-sm btn-theme-secondary" onClick={() => abrirAsignar(c.id)}>
+              {c.razonSocial} <span className="opacity-75">({c.modoServicio ?? 'presencial'})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Kits activos */}
+      {kitsActivos.length === 0 ? (
+        <div className="text-center py-5" style={{ color: 'var(--text-secondary)' }}>
+          <BsBoxSeam size={32} className="mb-2 opacity-50" />
+          <p className="mb-0 small">No hay kits activos. Asigná el primero.</p>
+        </div>
+      ) : (
+        <div className="d-flex flex-column gap-3">
+          {kitsActivos.map((kit) => {
+            const costoAsignado = kit.items.reduce((s, it) => s + (it.cantidadAsignada * (it.costoUnitario || 0)), 0)
+            const costoReal = kit.items.reduce((s, it) => s + ((it.cantidadConsumida || 0) * (it.costoUnitario || 0)), 0)
+            const remanenteCosto = costoAsignado - costoReal
             return (
-              <div key={t.key} className="rounded-3 px-3 py-2" style={{ background: 'var(--bg-primary)', minWidth: 140 }}>
-                <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>{t.label}</p>
-                <p className="mb-0 fw-bold" style={{ color: 'var(--primary-color)', fontSize: '1.3rem' }}>
-                  {t.total.toLocaleString('es-AR')}
-                </p>
-                <p className="mb-0" style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
-                  Stock: {stock.toLocaleString('es-AR')} {falta > 0 && <span style={{ color: 'var(--danger-color)' }}>· falta {falta.toLocaleString('es-AR')}</span>}
-                </p>
+              <div key={kit.id} className="rounded-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                <div className="px-3 py-2 d-flex align-items-center justify-content-between" style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span className="fw-semibold" style={{ color: 'var(--text-primary)' }}>{kit.clienteNombre}</span>
+                    <span className="small ms-2" style={{ color: 'var(--text-secondary)' }}>· {kit.modoServicio} · {kit.periodo}</span>
+                  </div>
+                  <div className="text-end small">
+                    <div>Costo asignado: <strong>{formatMonto(costoAsignado)}</strong></div>
+                    <div>Costo real consumido: <strong style={{ color: 'var(--primary-color)' }}>{formatMonto(costoReal)}</strong></div>
+                    <div style={{ color: 'var(--success-color)' }}>Remanente (margen): {formatMonto(remanenteCosto)}</div>
+                  </div>
+                </div>
+                <div className="p-3">
+                  {kit.items.map((it, idx) => {
+                    const rem = (it.cantidadAsignada || 0) - (it.cantidadConsumida || 0)
+                    return (
+                      <div key={idx} className="d-flex align-items-center justify-content-between py-1 small">
+                        <span>{it.nombre}</span>
+                        <span>
+                          {it.cantidadConsumida || 0} / {it.cantidadAsignada} {it.unidad}
+                          <span className="ms-2" style={{ color: 'var(--success-color)' }}>(remanente {rem})</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )
           })}
         </div>
-      </div>
-
-      {/* Por cliente */}
-      {datos.porCliente.length === 0 ? (
-        <div className="text-center py-5" style={{ color: 'var(--text-secondary)' }}>
-          <BsPeopleFill size={32} className="mb-2 opacity-50" />
-          <p className="mb-0 small">No hay clientes con máquinas registradas.</p>
-        </div>
-      ) : (
-        <div className="d-flex flex-column gap-3">
-          {datos.porCliente.map((c) => (
-            <div key={c.id} className="rounded-3" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-              <div className="px-3 py-2 d-flex align-items-center justify-content-between" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
-                <div className="d-flex align-items-center gap-2">
-                  <BsPeopleFill size={14} style={{ color: 'var(--primary-color)' }} />
-                  <span className="fw-semibold small" style={{ color: 'var(--text-primary)' }}>{c.razonSocial}</span>
-                  <span className="small" style={{ color: 'var(--text-secondary)' }}>· {c.cantMaquinas} máquina{c.cantMaquinas !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="d-flex align-items-center gap-1 small" style={{ color: 'var(--text-secondary)' }}>
-                  <BsCalendar3 size={12} />
-                  {formatRango(c.periodo.inicio, c.periodo.fin)}
-                </div>
-              </div>
-              <div className="px-3 py-2 d-flex flex-wrap gap-3">
-                {c.items.map((it) => (
-                  <div key={it.key} className="small">
-                    <span style={{ color: 'var(--text-secondary)' }}>{it.label}:</span>{' '}
-                    <strong style={{ color: 'var(--text-primary)' }}>{it.total.toLocaleString('es-AR')}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
       )}
 
-      <div className="mt-4 p-3 rounded-3" style={{ background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.2)' }}>
-        <p className="mb-0 small" style={{ color: 'var(--text-secondary)' }}>
-          <strong style={{ color: 'var(--text-primary)' }}>Receta por máquina / mes:</strong> 1 café, 2 chocolate, 4 leches, 350 vasos, 350 revolvedores.
-          El matching de stock es aproximado (busca por nombre). Ajustá los nombres de insumos para que coincidan mejor.
-        </p>
-      </div>
+      {/* Modal asignar */}
+      {modal && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+          <div className="p-4 rounded-3" style={{ background: 'var(--bg-secondary)', maxWidth: 400 }}>
+            <h6>Asignar kit estándar</h6>
+            <p className="small" style={{ color: 'var(--text-secondary)' }}>
+              Se creará un kit con la receta base multiplicada por la cantidad de máquinas del cliente. Los costos se toman de los precios actuales de compra.
+            </p>
+            <div className="d-flex gap-2 mt-3">
+              <button className="btn btn-theme-primary" disabled={saving} onClick={() => asignarKit(modal.clienteId)}>
+                {saving ? 'Asignando...' : 'Asignar'}
+              </button>
+              <button className="btn btn-theme-secondary" onClick={() => setModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
