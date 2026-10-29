@@ -82,5 +82,6 @@ export const clienteSchema = z.object({
   contactoEmail:    z.union([z.string().email('Email inválido'), z.literal('')]),
   direccion:        z.string().optional(),
   diaCobro:         z.coerce.number({ invalid_type_error: 'Requerido' }).int().min(1, 'Mín. 1').max(31, 'Máx. 31'),
+  modoServicio:     z.enum(['presencial', 'distancia']).default('presencial'),
   notas:            z.string().optional(),
 })
