@@ -31,7 +31,7 @@ const CAMPO = ({ label, error, children }) => (
 
 const EMPTY = {
   razonSocial: '', cuit: '', contactoNombre: '', contactoTelefono: '',
-  contactoEmail: '', direccion: '', diaCobro: '', notas: '',
+  contactoEmail: '', direccion: '', diaCobro: '', modoServicio: 'presencial', notas: '',
 }
 
 export default function ClienteFormPage() {
@@ -57,6 +57,7 @@ export default function ClienteFormPage() {
           contactoEmail:    d.contactoEmail    ?? '',
           direccion:        d.direccion        ?? '',
           diaCobro:         d.diaCobro         ?? '',
+          modoServicio:     d.modoServicio     ?? 'presencial',
           notas:            d.notas            ?? '',
         })
       }
@@ -151,7 +152,13 @@ export default function ClienteFormPage() {
           </CAMPO>
         </SECTION>
 
-        <SECTION title="Facturación">
+        <SECTION title="Servicio y facturación">
+          <CAMPO label="Modo de servicio *" error={errors.modoServicio}>
+            <select className="form-control" style={{ ...inputStyle, appearance: 'auto' }} value={form.modoServicio} onChange={set('modoServicio')}>
+              <option value="presencial">Presencial (operario carga en el lugar)</option>
+              <option value="distancia">Distancia (entrega de kit + servicio remoto)</option>
+            </select>
+          </CAMPO>
           <CAMPO label="Día de cobro (1–31) *" error={errors.diaCobro}>
             <input className="form-control" style={{ ...inputStyle, maxWidth: 120 }} type="number" min={1} max={31} value={form.diaCobro} onChange={set('diaCobro')} />
           </CAMPO>
