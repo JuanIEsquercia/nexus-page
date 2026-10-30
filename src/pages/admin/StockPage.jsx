@@ -8,7 +8,7 @@ import { insumoSchema, compraSchema } from '../../lib/schemas'
 
 const emptyItem = () => ({ insumoId: '', cantidad: '', precioItem: '' })
 import { formatFecha } from '../../lib/negocio'
-import { BsPlus, BsBoxSeam, BsPencil, BsTrash, BsCartPlus, BsExclamationTriangle } from 'react-icons/bs'
+import { BsPlus, BsBoxSeam, BsPencil, BsTrash, BsCartPlus, BsExclamationTriangle, BsArrowCounterclockwise } from 'react-icons/bs'
 
 const inputStyle = {
   background: 'var(--bg-primary)',
@@ -19,7 +19,7 @@ const inputStyle = {
 
 const UNIDADES = ['kg', 'g', 'litros', 'ml', 'unidades', 'sobres', 'cajas', 'bolsas']
 
-// ── Modal genérico ────────────────────────────────────
+// ── Modal genérico ──────────────────────────────────
 function Modal({ title, onClose, children, maxWidth = 420 }) {
   return (
     <div
@@ -52,7 +52,7 @@ function hoy() {
   return new Date().toISOString().split('T')[0]
 }
 
-// ── Componente principal ──────────────────────────────
+// ── Componente principal ──────────────────────────
 export default function StockPage() {
   const [insumos, setInsumos]       = useState([])
   const [loading, setLoading]       = useState(true)
@@ -75,6 +75,25 @@ export default function StockPage() {
   useEffect(() => { cargarInsumos() }, [])
 
   const closeModal = () => { setModal(null); setSelected(null); setErrors({}); setSaving(false) }
+
+  // ── Reset stock ──────────────────────────────
+  const resetStock = async () => {
+    if (!confirm('Esto pondrá el stock de TODOS los insumos en 0. ¿Confirmás? Esta acción no se puede deshacer.')) return
+    setSaving(true)
+    try {
+      const batch = writeBatch(db)
+      insumos.forEach((ins) => {
+        batch.update(doc(db, 'insumos', ins.id), { stockActual: 0, updatedAt: serverTimestamp() })
+      })
+      await batch.commit()
+      cargarInsumos()
+      alert('Stock reiniciado a 0 en todos los insumos.')
+    } catch (err) {
+      alert('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // ── Guardar insumo (nuevo o editar) ──────────────────
   const handleGuardarInsumo = async (e) => {
@@ -219,7 +238,15 @@ export default function StockPage() {
         <div>
           <h5 className="mb-0" style={{ color: 'var(--text-primary)' }}>Stock de insumos</h5>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap">
+          <button
+            className="btn btn-sm d-flex align-items-center gap-1"
+            onClick={resetStock}
+            disabled={saving || insumos.length === 0}
+            style={{ color: 'var(--danger-color)', background: 'transparent', border: '1px solid var(--danger-color)', borderRadius: '0.5rem' }}
+          >
+            <BsArrowCounterclockwise size={14} /> Reiniciar stock
+          </button>
           <button
             className="btn btn-sm btn-theme-secondary d-flex align-items-center gap-1"
             onClick={() => abrirCompra()}
@@ -377,8 +404,6 @@ export default function StockPage() {
         return (
           <Modal title="Registrar compra" onClose={closeModal} maxWidth={500}>
             <form onSubmit={handleCompra}>
-
-              {/* Fechas */}
               <div className="row g-2 mb-1">
                 <div className="col-6">
                   <CAMPO label="Fecha de compra *" error={errors.fecha}>
@@ -395,8 +420,6 @@ export default function StockPage() {
                   </CAMPO>
                 </div>
               </div>
-
-              {/* Ítems */}
               <p className="small mb-2 fw-semibold" style={{ color: 'var(--text-secondary)' }}>Productos</p>
               {formCompra.items.map((item, idx) => (
                 <div key={idx} className="mb-3 p-2 rounded-2" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
@@ -412,68 +435,33 @@ export default function StockPage() {
                         <option key={i.id} value={i.id}>{i.nombre} (stock: {i.stockActual ?? 0} {i.unidad})</option>
                       ))}
                     </select>
-                    {errors[`items.${idx}.insumoId`] && (
-                      <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.insumoId`]}</p>
-                    )}
                   </div>
-                  <div className="d-flex gap-2 align-items-start">
-                    <div className="flex-grow-1">
-                      <input type="number" className="form-control" style={{ ...inputStyle, background: 'var(--bg-primary)' }}
-                        placeholder="Cantidad *" min={0} step="0.01"
-                        value={item.cantidad}
-                        onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} />
-                      {errors[`items.${idx}.cantidad`] && (
-                        <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.cantidad`]}</p>
-                      )}
-                    </div>
-                    <div className="flex-grow-1">
-                      <input type="number" className="form-control" style={{ ...inputStyle, background: 'var(--bg-primary)' }}
-                        placeholder="Precio subtotal" min={0} step="0.01"
-                        value={item.precioItem}
-                        onChange={(e) => updateItem(idx, 'precioItem', e.target.value)} />
-                      {errors[`items.${idx}.precioItem`] && (
-                        <p className="mt-1 mb-0" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}>{errors[`items.${idx}.precioItem`]}</p>
-                      )}
-                    </div>
+                  <div className="d-flex gap-2">
+                    <input type="number" className="form-control" style={inputStyle} placeholder="Cantidad"
+                      value={item.cantidad} onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} />
+                    <input type="number" className="form-control" style={inputStyle} placeholder="Precio total"
+                      value={item.precioItem} onChange={(e) => updateItem(idx, 'precioItem', e.target.value)} />
                     {formCompra.items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(idx)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', fontSize: '1.1rem', lineHeight: 1, padding: '6px 4px', flexShrink: 0 }}>
-                        ×
+                      <button type="button" className="btn btn-sm" onClick={() => removeItem(idx)}
+                        style={{ color: 'var(--danger-color)', background: 'transparent', border: 'none' }}>
+                        <BsTrash size={14} />
                       </button>
                     )}
                   </div>
                 </div>
               ))}
-
-              <button type="button" className="btn btn-sm btn-theme-secondary w-100 mb-3"
-                onClick={addItem}>
-                + Agregar producto
+              <button type="button" className="btn btn-sm btn-theme-secondary mb-3" onClick={addItem}>
+                <BsPlus size={14} /> Agregar ítem
               </button>
-
-              {/* Total */}
-              {totalCompra > 0 && (
-                <div className="p-2 rounded-2 mb-3 d-flex justify-content-between align-items-center"
-                  style={{ background: 'rgba(var(--primary-rgb),0.07)', border: '1px solid var(--border-color)' }}>
-                  <span className="small" style={{ color: 'var(--text-secondary)' }}>
-                    Total · egreso pendiente en Finanzas
-                  </span>
-                  <strong style={{ color: 'var(--text-primary)' }}>
-                    ${totalCompra.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </strong>
-                </div>
-              )}
-
-              <CAMPO label="Notas" error={errors.notas}>
-                <input className="form-control" style={inputStyle} placeholder="Opcional"
-                  value={formCompra.notas}
+              <CAMPO label="Notas">
+                <textarea className="form-control" style={inputStyle} rows={2} value={formCompra.notas}
                   onChange={(e) => setFormCompra((f) => ({ ...f, notas: e.target.value }))} />
               </CAMPO>
-
-              {errors['items'] && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors['items']}</p>}
+              <p className="small mb-2">Total: <strong>${totalCompra.toLocaleString('es-AR')}</strong></p>
               {errors._global && <p className="small mb-2" style={{ color: 'var(--danger-color)' }}>{errors._global}</p>}
               <div className="d-flex gap-2">
                 <button type="submit" className="btn btn-theme-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : 'Confirmar compra'}
+                  {saving ? 'Guardando...' : 'Registrar compra'}
                 </button>
                 <button type="button" className="btn btn-theme-secondary" onClick={closeModal}>Cancelar</button>
               </div>
